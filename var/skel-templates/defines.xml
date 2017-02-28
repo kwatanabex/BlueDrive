@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  プロジェクト定数設定ファイル（defines.xml）
+
+  プロジェクト内で使用する設定値を定義する。
+
+  設定例）
+  - defines.xml
+    <define name="EXAMPLE">test</define>
+  - プログラム側
+    echo SyL_Config::get('EXAMPLE'); // test
+
+  設定名として、「SYL_」から始まる名称は、フレームワーク上で予約されているので使
+用不可。（その他使用可能文字は、半角英数と「_」）
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/defines.html
+-->
+<syl-defines xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-defines.xsd">
+  <framework>
+    <define name="SYL_DB_CONNECTION_STRING"></define>
+    <define name="SYL_SENDMAIL_CONNECTION_STRING">function</define>
+  </framework>
+  <application>
+    <!--
+    <define name="FOO">VAR</define>
+    -->
+  </application>
+</syl-defines>

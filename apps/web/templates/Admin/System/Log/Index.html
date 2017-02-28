@@ -1,0 +1,312 @@
+<?php
+$projects = $v->get('projects');
+$collect_log_level = $v->get('collect_log_level');
+$keep_log_date = $v->get('keep_log_date');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  var current = 1;
+  var max = 0;
+
+  function getList(page)
+  {
+    $('#alert-message-space').hide();
+    $('#list').empty();
+    $('.page-info div').empty();
+    $('#processing').show();
+
+    current = parseInt(page, 10);
+
+    var system_log = $('form select[name=system_log]').val();
+    var log_level = $('form select[name=log_level]').val();
+    var project = $('form select[name=project]').val();
+    var log = $('#page1 form input[name=log]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'system_log': system_log,
+        'log_level': log_level,
+        'project': project,
+        'log': log,
+        'page': page
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+        $('#alert-message-space').show();
+      },
+      complete: function () {
+        $('#processing').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'], result['page_info'])
+        } else {
+          $('#alert-message-space .alert-message').html('検索中にエラーが発生しました<br />' + result['message']);
+          $('#alert-message-space').show();
+        }
+      }
+    });
+  }
+
+  function displayList(rows, page)
+  {
+    if (rows.length == 0) {
+      $('#alert-message-space .alert-message').text('データが見つかりませんでした。');
+      $('#alert-message-space').show();
+      return;
+    }
+
+    var row_count = parseInt(page['row_count'], 10);
+    var row_max = parseInt(page['row_max'], 10);
+
+    var row_start = row_count * (current - 1) + 1;
+    var row_end = row_count * current;
+    if (row_end > row_max) {
+        row_end = row_max;
+    }
+    $('.page-info div:eq(0)').append('<span>全 ' + String(row_max) + ' 件<br />' + String(row_start) + ' 件目 ～ ' + String(row_end) + ' 件目を表示しています</span>');
+
+    var start = parseInt(page['range'][0], 10);
+    var end = parseInt(page['range'][1], 10);
+
+    max = parseInt(page['page_max'], 10);
+
+    $('.page-info div:eq(1)').append('<ul class="pagination bd-ul" />');
+    if (current > 1) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="prev">&#171;</a></li>');
+    }
+    if (start > 2) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">1</a></li>');
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+    }
+    for (var i=start; i<=end; i++) {
+      if (i == current) {
+        $('.page-info div:eq(1) ul').append('<li><span class="current">' + String(i) + '</span></li>');
+      } else {
+        $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(i) + '</a></li>');
+      }
+    }
+    if (end + 1 < max) {
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(max) + '</a></li>');
+    }
+    if (current < max) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="next">&#187;</a></li>');
+    }
+
+    var listId = '#list';
+    $(listId).append('<table class="table table-bordered bd-table-list"><thead /><tbody /></table>');
+
+    $(listId + ' table thead').append('<tr />');
+    $(listId + ' table thead tr').append('<th>日時</th>');
+    $(listId + ' table thead tr').append('<th>ログの種類</th>');
+    $(listId + ' table thead tr').append('<th>ログレベル</th>');
+    $(listId + ' table thead tr').append('<th>ホスト名</th>');
+    $(listId + ' table thead tr').append('<th>プロジェクト</th>');
+    $(listId + ' table thead tr').append('<th>アプリケーション</th>');
+
+    for (var i in rows) {
+      var system_log = '';
+      switch (rows[i]['SYSTEM_LOG']) {
+      case '0': system_log = 'アプリログ'; break;
+      case '1': system_log = 'システムログ'; break;
+      }
+
+      var tr_class = '';
+      switch (rows[i]['LOG_LEVEL']) {
+      case 'error':
+          tr_class = 'danger';
+          break;
+      case 'warn':
+          tr_class = 'warning';
+          break;
+      case 'notice':
+          tr_class = 'active';
+          break;
+      case 'info':
+      case 'debug':
+      case 'trace':
+          break;
+      }
+
+      $(listId + ' table tbody').append('<tr class="' + tr_class + '" />');
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['LOG_DATE']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(system_log);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['LOG_LEVEL']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['HOSTNAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['PROJECT_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['APPLICATION_NAME']);
+
+      $(listId + ' table tbody').append('<tr />');
+      $(listId + ' table tbody tr:last').append('<td colspan="6"></td>');
+
+      $(listId + ' table tbody tr:last td').append('<div class="log1"></div>');
+      $(listId + ' table tbody tr:last td').append('<div class="log2" style="display:none;"></div>');
+
+      var log1 = (rows[i]['LOG'].length > 100) ? rows[i]['LOG'].substr(0, 100) + '...' : rows[i]['LOG'];
+      $(listId + ' table tbody tr:last td div[class=log1]').append('<a href="#"><span class="glyphicon glyphicon-plus"></span></a>');
+      $(listId + ' table tbody tr:last td div[class=log1] a').unbind('click').click(function(e) {
+        e.preventDefault();
+        $(this).parent().hide();
+        $(this).parent().parent().find('div[class=log2]').show();
+      });
+      $(listId + ' table tbody tr:last td div[class=log1]').append('<span />');
+      $(listId + ' table tbody tr:last td div[class=log1] > span').text('　' + log1);
+
+      $(listId + ' table tbody tr:last td div[class=log2]').append('<a href="#"><span class="glyphicon glyphicon-minus"></a>');
+      $(listId + ' table tbody tr:last td div[class=log2] a').unbind('click').click(function(e) {
+        e.preventDefault();
+        $(this).parent().hide();
+        $(this).parent().parent().find('div[class=log1]').show();
+      });
+      if (rows[i]['METHOD']) {
+        $(listId + ' table tbody tr:last td div[class=log2]').append('<span />');
+        $(listId + ' table tbody tr:last td div[class=log2] > span').text('　' + rows[i]['METHOD']);
+        $(listId + ' table tbody tr:last td div[class=log2]').append('<div />');
+        $(listId + ' table tbody tr:last td div[class=log2] div').html($.BlueDriveUtil.encodeHtml(rows[i]['LOG']));
+      } else {
+        $(listId + ' table tbody tr:last td div[class=log2]').append('<div />');
+        $(listId + ' table tbody tr:last td div[class=log2] div').html($.BlueDriveUtil.encodeHtml(rows[i]['LOG']));
+      }
+    }
+  }
+
+  $('#page1 form').submit(function() {
+    getList(1);
+    return false;
+  });
+
+  function replacePagingCallback(page)
+  {
+    window.location.hash = 'page' + page;
+  }
+
+  $(window).hashchange(function() {
+    var hash = window.location.hash;
+    var page = '1';
+    if (hash && hash.match(/^#page(\d+)$/)) {
+      if (RegExp.$1 > 0) {
+        page = RegExp.$1;
+      }
+    }
+
+    getList(page);
+  });
+
+  // ページングイベント
+  $(document).on('click', '.page-info div:eq(1) ul li a.prev', function(e) {
+    replacePagingCallback(current-1);
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.page', function(e) {
+    replacePagingCallback($(this).text());
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.next', function(e) {
+    replacePagingCallback(current+1);
+  });
+
+  $(window).hashchange();
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　ログ<br /><small>管理対象のSyLフレームワークのログを収集した結果を確認します。</small></h1>
+  </div>
+
+  <div class="well well-sm">
+    <strong>現在の環境</strong><br />
+    <span>収集ログレベル : <?php echo $collect_log_level; ?> 以上　ログファイル保存期間 : <?php echo $keep_log_date; ?> 日　</span><span style="color: #CC0000;">※ これらの値を変更するには設定ファイルを修正する必要があります。</span>
+  </div>
+
+  <div id="page1">
+    <div>
+      <div><span class="glyphicon glyphicon-search"></span> <strong>検索</strong></div>
+      <form method="post" role="form">
+      <table class="table bd-table-form">
+        <tr>
+          <th style="width: 90px">ログの種類</th>
+          <td style="width: 160px">
+<select name="system_log" class="form-control">
+<option value="">-- すべて --</option>
+<option value="0">アプリログ</option>
+<option value="1">システムログ</option>
+</select>
+            </td>
+            <th style="width: 90px">ログレベル</th>
+            <td style="width: 160px">
+<select name="log_level" class="form-control">
+<option value="">-- すべて --</option>
+<option value="error">error</option>
+<option value="warn">warn</option>
+<option value="warn_u">warn 以上</option>
+<option value="notice">notice</option>
+<option value="notice_u" selected>notice 以上</option>
+<option value="info">info</option>
+<option value="info_u">info 以上</option>
+<option value="debug">debug</option>
+<option value="debug_u">debug 以上</option>
+<option value="trace">trace</option>
+<option value="trace_u">trace 以上</option>
+</select>
+            </td>
+            <th style="width: 100px">プロジェクト</th>
+            <td>
+<select name="project" class="form-control">
+<option value="">-- すべて --</option>
+<?php
+foreach ($projects as $project) {
+  echo sprintf('<option value="%s">%s</option>', $project, $project);
+}
+?>
+</select>
+</td>
+        </tr>
+        <tr>
+            <th style="width: 70px">ログの内容</th>
+            <td colspan="6"><input type="text" name="log" class="form-control" value="" size="30" /></td>
+        </tr>
+        <tr>
+          <td colspan="8" class="text-right">
+            <input type="submit" class="btn btn-primary" value="　検索　" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div>
+      <div class="row page-info" style="margin-bottom: 4px;">
+        <div class="col-xs-4"></div>
+        <div class="col-xs-8 text-right"></div>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>

@@ -1,0 +1,54 @@
+<?php
+$url_system_base = $v->get('App.Admin.url_system_base');
+?>
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　システム<br /><small>システム管理は、BlueDrive 自体の操作やSyLフレームワークのプロジェクトに関わる操作を行います。</small></h1>
+  </div>
+
+  <div>
+    <div class="well well-sm">
+      <h3><span class="glyphicon glyphicon-folder-open"></span>　ユーザー</h3>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_system_base; ?>user/">ユーザー管理</a></p>
+        <small>BlueDriveを利用するユーザーを管理します。</small>
+      </blockquote>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_system_base; ?>group/">グループ管理</a></p>
+        <small>BlueDriveを利用するユーザーが所属するグループを管理します。</small>
+      </blockquote>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_system_base; ?>realm/">アクセス範囲管理</a></p>
+        <small>BlueDriveを利用するユーザーが、アクセスするURLの範囲を管理します。</small>
+      </blockquote>
+    </div>
+  </div>
+
+  <div>
+    <div class="well well-sm">
+      <h3><span class="glyphicon glyphicon-folder-open"></span>　ファイル</h3>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_system_base; ?>area/">ファイル保存領域管理</a></p>
+        <small>サーバー上にあるファイルの保存領域の定義を管理します。</small>
+      </blockquote>
+    </div>
+  </div>
+
+  <div>
+    <div class="well well-sm">
+      <h3><span class="glyphicon glyphicon-folder-open"></span>　SyL</h3>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_system_base; ?>log/">ログ</a></p>
+        <small>管理対象のSyLフレームワークのログを収集した結果を確認します。</small>
+      </blockquote>
+    </div>
+  </div>

@@ -1,0 +1,122 @@
+<?php $form = $v->get('form'); ?>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var realm_name = $('form input[name=realm_name]').val();
+    var realm = $('form input[name=realm]').val();
+    var valid_flag = $('form input[name=valid_flag]:checked').val();
+
+    if (!realm_name) {
+      showAlertMessage('範囲名が入力されていません');
+      return false;
+    }
+
+    if (!realm) {
+      showAlertMessage('アクセス範囲が入力されていません');
+      return false;
+    }
+
+    if ((valid_flag != '0') && (valid_flag != '1')) {
+      showAlertMessage('状態が選択されていません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'realm_name': realm_name,
+        'realm': realm,
+        'valid_flag' : valid_flag
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　アクセス範囲管理 ／ 新規登録<br />
+  <small>BlueDriveを利用するユーザーが、アクセスするURLの範囲を新規登録します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;"></div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <form method="post" role="form">
+<?php foreach ($form->getElementNames() as $name) { ?>
+    <div class="form-group">
+<?php
+  echo '<label>' . $form->getDisplayName($name);
+  if ($form->isRequire($name)) {
+      echo '&nbsp;<span class="label label-danger">必須</span>';
+  }
+  echo '</label><br />';
+  echo $form->getHtml($name);
+?>
+    </div>
+<?php } ?>
+    <div class="alert alert-warning">
+      <span class="glyphicon glyphicon-warning-sign"></span> アクセス範囲とは、具体的にはアクセスされたアクションクラスです。
+    </div>
+    <button type="submit" class="btn btn-primary">　登録　</button>
+  </form>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> グループの登録が完了しました。
+  </div>
+  <div style="margin-top: 20px;">
+    <a href="./"><strong>一覧画面へ</strong></a>
+  </div>
+</div>

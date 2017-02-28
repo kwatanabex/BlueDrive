@@ -1,0 +1,308 @@
+<?php
+$storage_type_list = $v->get('storage_type_list');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  var current = 1;
+  var max = 0;
+  
+  function getList(page)
+  {
+    $('#alert-message-space').hide();
+    $('#list').empty();
+    $('.page-info div').empty();
+    $('#processing').show();
+
+    current = parseInt(page, 10);
+
+    var storage_type = $('form select[name=storage_type]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'list',
+        'storage_type': storage_type,
+        'page': page
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      complete: function () {
+        $('#processing').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'], result['page_info'])
+        } else {
+          showAlertMessage('検索中にエラーが発生しました<br />' + result['message']);
+        }
+      }
+    });
+  }
+
+  function displayList(rows, page)
+  {
+    if (rows.length == 0) {
+      showAlertMessage('データが見つかりませんでした。');
+      return;
+    }
+
+    var row_count = parseInt(page['row_count'], 10);
+    var row_max = parseInt(page['row_max'], 10);
+
+    var row_start = row_count * (current - 1) + 1;
+    var row_end = row_count * current;
+    if (row_end > row_max) {
+        row_end = row_max;
+    }
+    $('.page-info div:eq(0)').append('<span>全 ' + String(row_max) + ' 件<br />' + String(row_start) + ' 件目 ～ ' + String(row_end) + ' 件目を表示しています</span>');
+
+    var start = parseInt(page['range'][0], 10);
+    var end = parseInt(page['range'][1], 10);
+
+    max = parseInt(page['page_max'], 10);
+
+    $('.page-info div:eq(1)').append('<ul class="pagination bd-ul" />');
+    if (current > 1) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="prev">&#171;</a></li>');
+    }
+    if (start > 2) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">1</a></li>');
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+    }
+    for (var i=start; i<=end; i++) {
+      if (i == current) {
+        $('.page-info div:eq(1) ul').append('<li><span class="current">' + String(i) + '</span></li>');
+      } else {
+        $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(i) + '</a></li>');
+      }
+    }
+    if (end + 1 < max) {
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(max) + '</a></li>');
+    }
+    if (current < max) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="next">&#187;</a></li>');
+    }
+
+    var listId = '#list';
+    $(listId).append('<table class="table table-bordered bd-table-list"><thead /><tbody /></table>');
+
+    $(listId + ' table thead').append('<tr />');
+    $(listId + ' table thead tr').append('<th style="width: 80px;">ID</th>');
+    $(listId + ' table thead tr').append('<th>保存領域名</th>');
+    $(listId + ' table thead tr').append('<th>ストレージタイプ</th>');
+    $(listId + ' table thead tr').append('<th>ルートディレクトリ</th>');
+    $(listId + ' table thead tr').append('<th style="width: 60px;" class="text-center">状態</th>');
+    $(listId + ' table thead tr').append('<th style="width: 140px;"></th>');
+
+    for (var i in rows) {
+      var row_class = '';
+      if (rows[i]['VALID_FLAG'] == '1') {
+        state_name = '有効';
+      } else {
+        state_name = '無効';
+        row_class = 'active';
+      }
+
+      $(listId + ' table tbody').append('<tr class="' + row_class + '" />');
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['FILE_AREA_ID']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['FILE_AREA_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['STORAGE_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['ROOT_DIRECTORY']);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"></td>');
+      $(listId + ' table tbody tr:last td:last').text(state_name);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"><input type="button" name="edit" class="btn btn-default" value="編集" /> <input type="button" name="remove" class="btn btn-default" value="削除" /></td>');
+    }
+  }
+
+  function showAlertMessage(message)
+  {
+    $('#alert-message-space .alert-message').html(message);
+    $('#alert-message-space').show();
+  }
+
+  $('#page1 form[name="inputForm"]').submit(function() {
+    getList(1);
+    return false;
+  });
+
+  $(document).on('click', '.page-header form[name="operationForm"] input[name="new"]', function() {
+    window.location.href = 'new.html';
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="edit"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    window.location.href = 'edit.html?id=' + id;
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="remove"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    var name = $(this).closest('tr').children('td:eq(1)').text();
+    $('#file-area-remove-id').text(id);
+    $('#file-area-remove-name').text(name);
+    $.colorbox({inline:true, width:"400px", href:"#file-area-remove-dialog"});
+  });
+
+  $(document).on('click', 'form[name="removeForm"] input[name="remove"]', function() {
+    $('#file-area-remove-confirm').hide();
+    $('#file-area-remove-applying').show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'remove',
+        'file_area_id': $('#file-area-remove-id').text()
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        $('#file-area-remove-error').show();
+      },
+      complete: function () {
+        $('#file-area-remove-applying').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $('#file-area-remove-complete').show();
+        } else {
+          $('#file-area-remove-error').show();
+        }
+      }
+    });
+  });
+
+  function replacePagingCallback(page)
+  {
+    window.location.hash = 'page' + page;
+  }
+
+  $(window).hashchange(function() {
+    var hash = window.location.hash;
+    var page = '1';
+    if (hash && hash.match(/^#page(\d+)$/)) {
+      if (RegExp.$1 > 0) {
+        page = RegExp.$1;
+      }
+    }
+
+    getList(page);
+  });
+
+  // ページングイベント
+  $(document).on('click', '.page-info div:eq(1) ul li a.prev', function(e) {
+    replacePagingCallback(current-1);
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.page', function(e) {
+    replacePagingCallback($(this).text());
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.next', function(e) {
+    replacePagingCallback(current+1);
+  });
+
+  $(window).hashchange();
+
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <div class="row">
+      <div class="col-xs-9">
+      <h1><span class="glyphicon glyphicon-book"></span>　ファイル保存領域管理<br />
+      <small>サーバー上にあるファイルの保存領域の定義を管理します。</small></h1>
+      </div>
+      <div class="col-xs-3 text-right" style="padding-top: 30px;">
+        <form name="operationForm" method="post" role="form">
+        <input type="button" name="new" class="btn btn-default" value="　新規登録　" />
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="page1">
+    <div>
+      <form name="inputForm" method="post" role="form">
+      <div><span class="glyphicon glyphicon-search"></span> <strong>検索</strong></div>
+      <table class="table bd-table-form">
+        <tr>
+          <th style="width: 140px">ストレージタイプ</th>
+          <td><select name="storage_type" class="form-control">
+<option value="">-- 選択してください --</option>
+<?php foreach ($storage_type_list as $key => $value) { ?>
+<option value="<?php echo $value; ?>"><?php echo $key; ?></option>
+<?php } ?>
+</select>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <input type="submit" class="btn btn-primary" value="　検索　" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div>
+      <form name="listForm" method="post" role="form">
+      <div class="row page-info" style="margin-bottom: 4px;">
+        <div class="col-xs-4"></div>
+        <div class="col-xs-8 text-right"></div>
+      </div>
+      <div id="list"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>
+
+  <div style='display:none'>
+    <div id="file-area-remove-dialog" class="bd-dialog-mini">
+      <form name="removeForm" method="post" role="form">
+      <h3><span class="glyphicon glyphicon-retweet"></span> ファイル保存領域の削除</h3>
+      <div id="file-area-remove-confirm">
+        <p>下記のファイル保存領域を削除します。</p>
+        <div>ID: <span id="file-area-remove-id"></span></div>
+        <div>保存領域名: <span id="file-area-remove-name"></span></div>
+        <div style="margin-top: 10px;"><input type="button" name="remove" class="btn btn-primary" value="　削除　" /> <input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close();" /></div>
+      </div>
+      <div id="file-area-remove-applying" class="alert alert-info" style="display:none;">
+        <p>保存領域名を削除しています…</p>
+      </div>
+      <div id="file-area-remove-complete" class="alert alert-success" style="display:none;">
+        <p>保存領域名の削除が完了しました。</p>
+        <p><input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close(); window.location.reload();" /></p>
+      </div>
+      <div id="file-area-remove-error" class="alert alert-danger" style="display:none;">
+        <p>システムエラーが発生しました。管理者にお問い合わせください。</p>
+        <p><input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close(); window.location.reload();" /></p>
+      </div>
+      <button id="cboxClose" type="button">close</button>
+      </form>
+    </div>
+  </div>

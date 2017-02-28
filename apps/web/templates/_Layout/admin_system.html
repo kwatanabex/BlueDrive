@@ -1,0 +1,56 @@
+<?php
+$url_system_base = $v->get('App.Admin.url_system_base');
+$breadcrumbs = $v->get('App.Admin.breadcrumbs');
+
+$action = $v->get('App.Admin.Action');
+?>
+<?php include_once 'header.html'; ?>
+
+<?php include_once 'navbar.html'; ?>
+
+  <div id="container">
+    <div class="row">
+      <div class="col-xs-2">
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;ユーザー</small></p>
+        <div class="list-group">
+          <a href="<?php echo $url_system_base; ?>user/" class="list-group-item <?php echo ($action == 'user') ? 'active' : ''; ?>">ユーザー管理</a>
+          <a href="<?php echo $url_system_base; ?>group/" class="list-group-item <?php echo ($action == 'group') ? 'active' : ''; ?>">グループ管理</a>
+          <a href="<?php echo $url_system_base; ?>realm/" class="list-group-item <?php echo ($action == 'realm') ? 'active' : ''; ?>">アクセス範囲管理</a>
+        </div>
+
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;ファイル</small></p>
+        <div class="list-group">
+          <a href="<?php echo $url_system_base; ?>area/" class="list-group-item <?php echo ($action == 'area') ? 'active' : ''; ?>">ファイル保存領域管理</a>
+        </div>
+
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;SyL</small></p>
+        <div class="list-group">
+          <a href="<?php echo $url_system_base; ?>log/" class="list-group-item <?php echo ($action == 'log') ? 'active' : ''; ?>">ログ</a>
+          <a href="#" class="list-group-item">キャッシュの削除</a>
+        </div>
+
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;その他</small></p>
+        <div class="list-group">
+          <a href="<?php echo $url_system_base; ?>sql/" class="list-group-item">SQL実行</a>
+        </div>
+      </div>
+      <div class="col-xs-10">
+        <ol class="breadcrumb">
+<?php
+foreach ($breadcrumbs as $name => $url) {
+    if ($url) {
+        echo '<li><a href="' . $url . '">' . htmlspecialchars($name) . '</a>&nbsp;</li>';
+    } else {
+        echo '<li class="active">' . htmlspecialchars($name) . '&nbsp;</li>';
+    }
+}
+?>
+        </ol>
+        <div id="contents">
+          <?php include_once $v->getContentFile(); ?>
+        </div> 
+      </div>
+    </div>
+  </div> 
+
+<?php include_once 'footer.html'; ?>

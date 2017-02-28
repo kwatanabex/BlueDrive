@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  SyLライブラリ DAO作成設定ファイル（dao.xml）
+-->
+<syl-dao xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-dao.xsd">
+  <!--
+    DBコネクション文字列（必須）
+    SyL_DB形式
+  -->
+  <connectionString></connectionString>
+
+  <!--
+    生成クラス出力ディレクトリ（必須）
+  -->
+  <outputDir>{$SYL_PROJECT_DIR}/lib</outputDir>
+
+  <!--
+    DB文字コード（任意）
+    PHP の mbstring 関数で使用できる形式で設定する
+  -->
+  <encoding></encoding>
+  <!--
+    バリデーションメッセージフォーマット（任意）
+  -->
+  <validationMessage></validationMessage>
+
+</syl-dao>

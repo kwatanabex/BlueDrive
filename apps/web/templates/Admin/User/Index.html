@@ -1,0 +1,24 @@
+<?php
+$url_user_base = $v->get('App.Admin.url_user_base')
+?>
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　ユーザー<br /><small>ユーザー管理は、BlueDrive にログインしているユーザーの情報を管理します。</small></h1>
+  </div>
+
+  <div>
+    <div class="well well-sm">
+      <h3><span class="glyphicon glyphicon-folder-open"></span>　ユーザー</h3>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_user_base; ?>edit/">ユーザー情報変更</a></p>
+        <small>BlueDriveにログインしているユーザーの情報を変更します。</small>
+      </blockquote>
+    </div>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_user_base; ?>password/">パスワード変更</a></p>
+        <small>BlueDriveにログインしているユーザーのパスワードを変更します。</small>
+      </blockquote>
+    </div>
+  </div>

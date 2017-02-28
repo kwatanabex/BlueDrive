@@ -1,0 +1,30 @@
+
+TOPページ
+
+<link rel="stylesheet" type="text/css" charset="utf-8" href="/js/jquery/colorbox.css" />
+<script type="text/javascript" src="/js/jquery/jquery.colorbox-min.js"></script>
+
+<script type="text/javascript">
+$(function(){
+
+$('.iframe').colorbox({width:"850px", height:"400px", iframe:true});
+$('.inline').colorbox({width:"850px", height:"400px", inline:true, href: '#inlinetest', onOpen: function() {
+  $('#inlinetest').show();
+}, onClosed: function() {
+  $('#inlinetest').hide();
+}
+});
+
+});
+
+</script>
+
+<a href="/admin/file/manager/dialog.html?name=test" class="iframe">ダイアログ表示</a>
+
+<a href="/admin/file/manager/dialog.html?name=test" class="inline">ダイアログ表示</a>
+
+
+<div id="inlinetest" style="display:none; background-color: #FFFFFF;">
+  <h2>インラインテスト</h2>
+  <p>ああああああああああああああああああああ</p>
+</div>

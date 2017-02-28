@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<syl-dao xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-dao.xsd">
+  <generation>
+    <database name="stock">
+      <connectionString>pgsql://xxxxx:xxxxx@localhost:5432/stock</connectionString>
+      <outputDir>{$SYL_PROJECT_DIR}/var/lib/stock</outputDir>
+      <encoding>utf-8</encoding>
+    </database>
+    <database name="syl">
+      <connectionString>pgsql://xxxxx:xxxxx@localhost:5432/syl</connectionString>
+      <outputDir>{$SYL_PROJECT_DIR}/var/lib/syl</outputDir>
+      <encoding>utf-8</encoding>
+    </database>
+  </generation>
+  <validationMessage>
+    <require>
+      <message>{$name}は必須です</message>
+    </require>
+    <numeric>
+      <message>{$name}は数値で入力してください</message>
+      <min-error-message>{$name}は{$min}以上で入力してください</min-error-message>
+      <max-error-message>{$name}は{$max}以下で入力してください</max-error-message>
+    </numeric>
+    <date>
+      <message>{$name}は日付で入力してください</message>
+    </date>
+    <time>
+      <message>{$name}が正しくありません</message>
+    </time>
+    <byte>
+      <message>{$name}は{$max}文字（バイト）以内で入力してください</message>
+    </byte>
+    <multibyte>
+      <message>{$name}は{$max}文字以内で入力してください</message>
+    </multibyte>
+  </validationMessage>
+
+</syl-dao>

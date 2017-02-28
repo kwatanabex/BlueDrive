@@ -1,0 +1,51 @@
+<?php
+$metadata_dir = $v->get('metadata_dir');
+$enable_compress = $v->get('enable_compress');
+$generate_crud = $v->get('generate_crud');
+
+$error_message = '';
+if (!$generate_crud) {
+    $error_message = 'メタデータが作成されていません。';
+} else if (!$enable_compress) {
+    $error_message = '一時領域の保存、または圧縮アーカイブ機能が使用できません。Phar を有効にしてください。';
+}
+?>
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　メタデータのバックアップ<br /><small>メタデータのバックアップは、サーバー上に作成したメタデータをバックアップし、ローカル環境にダウンロードします。</small></h1>
+  </div>
+
+<?php if (!$error_message) { ?>
+  <div id="page1">
+    <form method="post" role="form">
+    <div>
+      <table class="bd-table-form">
+        <tr>
+          <th>バックアップディレクトリ</th>
+          <td><?php echo $metadata_dir; ?></td>
+        </tr>
+        <tr>
+          <th>圧縮アーカイブ</th>
+          <td>
+          <label class="radio-inline">
+            <input type="radio" id="page1-ext1" name="ext" value=".zip" checked /> ZIP
+          </label>
+          <label class="radio-inline">
+            <input type="radio" id="page1-ext2" name="ext" value=".tar.gz" /> TAR & GZIP
+          </label>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <input type="submit" name="backupok" class="btn btn-primary" value="バックアップを実行する" />
+    </div>
+    <input type="hidden" name="type" value="backup" />
+    </form>
+  </div>
+
+<?php } else { ?>
+  <div class="alert alert-warning">
+    <span class="glyphicon glyphicon-warning-sign"></span> <?php echo $error_message; ?>
+  </div>
+<?php } ?>

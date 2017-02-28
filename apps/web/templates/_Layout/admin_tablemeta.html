@@ -1,0 +1,141 @@
+<?php
+$url_tablemeta_base  = $v->get('App.Admin.url_tablemeta_base');
+
+$current_database = $v->get('current_database');
+$databases = $v->get('databases');
+$action = $v->get('App.Admin.Action');
+
+?>
+<?php include_once 'header.html'; ?>
+
+<?php include_once 'navbar.html'; ?>
+
+  <div id="container">
+    <div class="row">
+      <div class="col-xs-2">
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;現在のデータベース</small></p>
+        <div class="list-group">
+          <a id="popup-select-database" href="#select-database" class="list-group-item"><?php echo htmlspecialchars($current_database); ?></a>
+        </div>
+
+        <div style='display:none'>
+          <div id="select-database" class="bd-dialog">
+            <div id="databaseInput">
+              <h3><span class="glyphicon glyphicon-retweet"></span> データベースの切り替え</h3>
+              <p>切り替えるデータベースを選択してください。</p>
+              <form id="databaseForm" role="form">
+                <div class="form-group">
+                  <select name="database" class="form-control input-lg">
+<?php
+foreach ($databases as $name => $values) {
+  echo sprintf('<option name="%s">%s</option>', $name, $name);
+}
+?>
+                  </select>
+                </div>
+                <div>
+                  <p>メタデータ作成ディレクトリ</p>
+                  <p><span id="database-output-dir"></span></p>
+                </div>
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary">変更する</button>
+                </div>
+              </form>
+            </div>
+            <div id="databaseApplying" class="alert alert-info" style="display:none;">
+              変更を適用しています…
+            </div>
+            <div id="databaseApplyError" class="alert alert-danger" style="display:none;">
+              システムエラーが発生しました。管理者にお問い合わせください。
+            </div>
+
+            <form>
+              <button id="cboxClose" type="button">close</button>
+            </form>
+          </div>
+        </div>
+
+<script type="text/javascript">
+<!--
+  var outputDir = {};
+<?php foreach ($databases as $name => $values) { ?>
+  outputDir['<?php echo $name; ?>'] = '<?php echo htmlspecialchars($values['outputDir']); ?>';
+<?php } ?>
+  var currentDatabase = '<?php echo $current_database; ?>';
+
+$(function() {
+  $('#databaseForm select[name=database]').val(currentDatabase);
+  $('#database-output-dir').text(outputDir[currentDatabase]);
+
+  $('#databaseForm select[name=database]').change(function() {
+    $('#database-output-dir').text(outputDir[$(this).val()]);
+  });
+
+  $('#databaseForm').submit(function() {
+    $('#databaseInput').hide();
+    $('#databaseApplying').show();
+ 
+    var database = $('#databaseForm select[name=database]').val();
+    var complete = false;
+    $.ajax({
+      type: "POST",
+      url: '<?php echo $url_tablemeta_base; ?>',
+      data: {
+        'database': database
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        $('#databaseApplying').hide();
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#databaseApplyError').text(response.message);
+          }
+        }
+        $('#databaseApplyError').show();
+      },
+      success: function(result)
+      {
+        window.location.reload();
+      }
+    });
+
+    return false;
+  });
+
+  $("#popup-select-database").colorbox({inline:true, width:"600px"});
+});
+//-->
+</script>
+
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;テーブルメタ管理</small></p>
+        <div class="list-group">
+          <a href="<?php echo $url_tablemeta_base; ?>list/" class="list-group-item <?php echo ($action == 'list') ? 'active' : ''; ?>">テーブルリストの編集</a>
+          <a href="<?php echo $url_tablemeta_base; ?>create/" class="list-group-item <?php echo ($action == 'create') ? 'active' : ''; ?>">メタデータの作成</a>
+          <a href="<?php echo $url_tablemeta_base; ?>edit/" class="list-group-item <?php echo ($action == 'edit') ? 'active' : ''; ?>">メタデータの編集</a>
+          <a href="<?php echo $url_tablemeta_base; ?>remove/" class="list-group-item <?php echo ($action == 'remove') ? 'active' : ''; ?>">メタデータの削除</a>
+          <a href="<?php echo $url_tablemeta_base; ?>backup/" class="list-group-item <?php echo ($action == 'backup') ? 'active' : ''; ?>">メタデータのバックアップ</a>
+          <a href="<?php echo $url_tablemeta_base; ?>restore/" class="list-group-item <?php echo ($action == 'restore') ? 'active' : ''; ?>">メタデータのリストア</a>
+        </div>
+      </div>
+
+      <div class="col-xs-10">
+        <ol class="breadcrumb">
+<?php
+foreach ($v->get('App.Admin.breadcrumbs') as $name => $url) {
+    if ($url) {
+        echo '<li><a href="' . $url . '">' . htmlspecialchars($name) . '</a>&nbsp;</li>';
+    } else {
+        echo '<li class="active">' . htmlspecialchars($name) . '&nbsp;</li>';
+    }
+}
+?>
+        </ol>
+        <div id="contents">
+          <?php include_once $v->getContentFile(); ?>
+        </div> 
+      </div>
+    </div>
+  </div> 
+
+<?php include_once 'footer.html'; ?>

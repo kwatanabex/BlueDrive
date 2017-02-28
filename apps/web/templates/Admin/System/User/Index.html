@@ -1,0 +1,324 @@
+<?php
+$url_tablemeta_base  = $v->get('App.Admin.url_tablemeta_base');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  var current = 1;
+  var max = 0;
+  
+  function getList(page)
+  {
+    $('#alert-message-space').hide();
+    $('#list').empty();
+    $('.page-info div').empty();
+    $('#processing').show();
+
+    current = parseInt(page, 10);
+
+    var user_name = $('form input[name=user_name]').val();
+    var email = $('form input[name=email]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'list',
+        'user_name': user_name,
+        'email' : email,
+        'page': page
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      complete: function () {
+        $('#processing').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'], result['page_info'])
+        } else {
+          showAlertMessage('検索中にエラーが発生しました<br />' + result['message']);
+        }
+      }
+    });
+  }
+
+  function displayList(rows, page)
+  {
+    if (rows.length == 0) {
+      showAlertMessage('データが見つかりませんでした。');
+      return;
+    }
+
+    var row_count = parseInt(page['row_count'], 10);
+    var row_max = parseInt(page['row_max'], 10);
+
+    var row_start = row_count * (current - 1) + 1;
+    var row_end = row_count * current;
+    if (row_end > row_max) {
+        row_end = row_max;
+    }
+    $('.page-info div:eq(0)').append('<span>全 ' + String(row_max) + ' 件<br />' + String(row_start) + ' 件目 ～ ' + String(row_end) + ' 件目を表示しています</span>');
+
+    var start = parseInt(page['range'][0], 10);
+    var end = parseInt(page['range'][1], 10);
+
+    max = parseInt(page['page_max'], 10);
+
+    $('.page-info div:eq(1)').append('<ul class="pagination bd-ul" />');
+    if (current > 1) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="prev">&#171;</a></li>');
+    }
+    if (start > 2) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">1</a></li>');
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+    }
+    for (var i=start; i<=end; i++) {
+      if (i == current) {
+        $('.page-info div:eq(1) ul').append('<li><span class="current">' + String(i) + '</span></li>');
+      } else {
+        $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(i) + '</a></li>');
+      }
+    }
+    if (end + 1 < max) {
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(max) + '</a></li>');
+    }
+    if (current < max) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="next">&#187;</a></li>');
+    }
+
+    var listId = '#list';
+    $(listId).append('<table class="table table-bordered bd-table-list"><thead /><tbody /></table>');
+
+    $(listId + ' table thead').append('<tr />');
+    $(listId + ' table thead tr').append('<th style="width: 80px;">ID</th>');
+    $(listId + ' table thead tr').append('<th>ユーザー名</th>');
+    $(listId + ' table thead tr').append('<th>ログインID</th>');
+    $(listId + ' table thead tr').append('<th>メールアドレス</th>');
+    $(listId + ' table thead tr').append('<th>グループ名</th>');
+    $(listId + ' table thead tr').append('<th style="width:60px;" class="text-center">管理者</th>');
+    $(listId + ' table thead tr').append('<th style="width:60px;" class="text-center">状態</th>');
+    $(listId + ' table thead tr').append('<th style="width:230px;"></th>');
+
+    for (var i in rows) {
+      var admin_name = (rows[i]['ADMIN_FLAG'] == '1') ? '○' : '';
+      var row_class = '';
+      if (rows[i]['ADMIN_FLAG'] == '1') {
+        admin_name = '○';
+        row_class = 'success';
+      } else {
+        admin_name = '';
+      }
+      if (rows[i]['VALID_FLAG'] == '1') {
+        state_name = '有効';
+      } else {
+        state_name = '無効';
+        row_class = 'active';
+      }
+      var email = (rows[i]['EMAIL']) ? rows[i]['EMAIL'] : '';
+      var group_name = (rows[i]['GROUP_NAME']) ? rows[i]['GROUP_NAME'] : '';
+
+      $(listId + ' table tbody').append('<tr class="' + row_class + '" />');
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['USER_ID']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['USER_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['LOGIN_ID']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(email);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(group_name);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"></td>');
+      $(listId + ' table tbody tr:last td:last').text(admin_name);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"></td>');
+      $(listId + ' table tbody tr:last td:last').text(state_name);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"><input type="button" name="edit" class="btn btn-default" value="編集" /> <input type="button" name="edit_passwd" class="btn btn-default" value="パスワード" /> <input type="button" name="remove" class="btn btn-default" value="削除" /></td>');
+    }
+  }
+
+  function showAlertMessage(message)
+  {
+    $('#alert-message-space .alert-message').html(message);
+    $('#alert-message-space').show();
+  }
+
+  $('#page1 form[name="inputForm"]').submit(function() {
+    getList(1);
+    return false;
+  });
+
+  $(document).on('click', '.page-header form[name="operationForm"] input[name="new"]', function() {
+    window.location.href = 'new.html';
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="edit"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    window.location.href = 'edit.html?id=' + id;
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="edit_passwd"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    window.location.href = 'password.html?id=' + id;
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="remove"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    var name = $(this).closest('tr').children('td:eq(1)').text();
+    $('#user-remove-id').text(id);
+    $('#user-remove-name').text(name);
+    $.colorbox({inline:true, width:"400px", href:"#user-remove-dialog"});
+  });
+
+  $(document).on('click', 'form[name="removeForm"] input[name="remove"]', function() {
+    $('#user-remove-confirm').hide();
+    $('#user-remove-applying').show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'remove',
+        'user_id': $('#user-remove-id').text()
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        $('#user-remove-error').show();
+      },
+      complete: function () {
+        $('#user-remove-applying').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $('#user-remove-complete').show();
+        } else {
+          $('#user-remove-error').show();
+        }
+      }
+    });
+  });
+
+  function replacePagingCallback(page)
+  {
+    window.location.hash = 'page' + page;
+  }
+
+  $(window).hashchange(function() {
+    var hash = window.location.hash;
+    var page = '1';
+    if (hash && hash.match(/^#page(\d+)$/)) {
+      if (RegExp.$1 > 0) {
+        page = RegExp.$1;
+      }
+    }
+
+    getList(page);
+  });
+
+  // ページングイベント
+  $(document).on('click', '.page-info div:eq(1) ul li a.prev', function(e) {
+    replacePagingCallback(current-1);
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.page', function(e) {
+    replacePagingCallback($(this).text());
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.next', function(e) {
+    replacePagingCallback(current+1);
+  });
+
+  $(window).hashchange();
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <div class="row">
+      <div class="col-xs-9">
+      <h1><span class="glyphicon glyphicon-book"></span>　ユーザー管理<br /><small>BlueDriveを利用するユーザーを管理します。</small></h1>
+      </div>
+      <div class="col-xs-3 text-right" style="padding-top: 30px;">
+        <form name="operationForm" method="post" role="form">
+        <input type="button" name="new" class="btn btn-default" value="　新規登録　" />
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="page1">
+    <div>
+      <form name="inputForm" method="post" role="form">
+      <div><span class="glyphicon glyphicon-search"></span> <strong>検索</strong></div>
+      <table class="table bd-table-form">
+        <tr>
+          <th style="width: 90px">ユーザー名</th>
+          <td><input type="text" name="user_name" class="form-control" value="" /></td>
+          <th style="width: 120px">メールアドレス</th>
+          <td><input type="text" name="email" class="form-control" value="" /></td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <input type="submit" class="btn btn-primary" value="　検索　" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div>
+      <form name="listForm" method="post" role="form">
+      <div class="row page-info" style="margin-bottom: 4px;">
+        <div class="col-xs-4"></div>
+        <div class="col-xs-8 text-right"></div>
+      </div>
+      <div id="list"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>
+
+  <div style='display:none'>
+    <div id="user-remove-dialog" class="bd-dialog-mini">
+      <form name="removeForm" method="post" role="form">
+      <h3><span class="glyphicon glyphicon-retweet"></span> ユーザーの削除</h3>
+      <div id="user-remove-confirm">
+        <p>下記のユーザーを削除します。</p>
+        <div>ユーザーID: <span id="user-remove-id"></span></div>
+        <div>ユーザー名: <span id="user-remove-name"></span></div>
+        <div style="margin-top: 10px;"><input type="button" name="remove" class="btn btn-primary" value="　削除　" /> <input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close();" /></div>
+      </div>
+      <div id="user-remove-applying" class="alert alert-info" style="display:none;">
+        <p>ユーザーを削除しています…</p>
+      </div>
+      <div id="user-remove-complete" class="alert alert-success" style="display:none;">
+        <p>ユーザーの削除が完了しました。</p>
+        <p><input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close(); window.location.reload();" /></p>
+      </div>
+      <div id="user-remove-error" class="alert alert-danger" style="display:none;">
+        <p>システムエラーが発生しました。管理者にお問い合わせください。</p>
+        <p><input type="button" name="back" class="btn btn-default" value="　戻る　" onclick="$.colorbox.close(); window.location.reload();" /></p>
+      </div>
+      <button id="cboxClose" type="button">close</button>
+      </form>
+    </div>
+  </div>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<syl-form name="editUserForm">
+  <element type="text" name="user_name" display="ユーザー名">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <validators>
+      <validator name="require" message="{$name}が入力されていません" />
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">50</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="text" name="email" display="メールアドレス">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <validators>
+      <validator name="byte" message="{$name}は{$max}バイト以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+      <validator name="email" message="{$name}の形式が正しくありません" />
+   </validators>
+  </element>
+</syl-form>

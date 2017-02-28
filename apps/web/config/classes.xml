@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  フレームワークカスタムクラス設定ファイル（classes.xml）
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/classes.html
+-->
+<syl-classes xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-classes.xsd">
+<!--
+  <data>App.Data</data>
+-->
+  <error-handler>App.ErrorHandler</error-handler>
+<!--
+  <request>App.Request</request>
+  <response>App.Response</response>
+  <router>App.Router</router>
+  <user>App.User</user>
+-->
+  <session>App.Session</session>
+  <user>App.User</user>
+</syl-classes>

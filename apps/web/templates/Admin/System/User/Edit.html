@@ -1,0 +1,170 @@
+<?php $form = $v->get('form'); ?>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var user_id = $('form input[name=user_id]').val();
+    var user_name = $('form input[name=user_name]').val();
+    var email = $('form input[name=email]').val();
+    var admin_flag = $('form input[name=admin_flag]:checked').val();
+    var group_id = $('form select[name=group_id] option:selected').val();
+    var valid_flag = $('form input[name=valid_flag]:checked').val();
+
+    if (user_name == '') {
+      showAlertMessage('ユーザー名が入力されていません');
+      return false;
+    }
+
+    if (admin_flag == '') {
+      showAlertMessage('ユーザーが選択されていません');
+      return false;
+    }
+
+    if (!group_id) {
+      showAlertMessage('グループが選択されていません');
+      return false;
+    }
+
+    if (valid_flag == '') {
+      showAlertMessage('状態が選択されていません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "user_id": user_id,
+        "user_name": user_name,
+        "email": email,
+        "admin_flag" : admin_flag,
+        "group_id" : group_id,
+        "valid_flag" : valid_flag
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+
+  $(document).on('click', '#page1 form input[name="admin_flag"]', function() {
+    switch($(this).val()) {
+    case '1':
+      $('#page1 form select[name=group_id]').prop('disabled', true);
+      break;
+    default:
+      $('#page1 form select[name=group_id]').prop('disabled', false);
+      break;
+    }
+  });
+
+  // グループの選択可否のデフォルト
+  $('#page1 form input[name="admin_flag"]:checked').trigger('click');
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　ユーザー管理 ／ 編集<br />
+  <small>BlueDriveを利用するユーザーの情報を編集します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;"></div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <div class="well well-sm">
+    <div><span class="glyphicon glyphicon-info-sign"></span> <strong>登録日付</strong> <?php echo $form->getValue('i_date'); ?>&nbsp;&nbsp;<strong>更新日付</strong> <?php echo $form->getValue('u_date'); ?></div>
+  </div>
+
+  <form method="post" role="form">
+
+    <div class="form-group">
+      <label for="form1_user_name"><?php echo $form->getDisplayName('user_name'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('user_name'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_email"><?php echo $form->getDisplayName('email'); ?></label><br />
+      <?php echo $form->getHtml('email'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_admin_flag"><?php echo $form->getDisplayName('admin_flag'); ?>&nbsp;<span class="label label-danger">必須</span></label>
+      <div class="radio" style="margin-top: 0;">
+        <label><input name="admin_flag" type="radio" id="form1_admin_flag_1" value="1" <?php echo ($form->getValue('admin_flag') == '1') ? 'checked' : ''; ?> /> 管理者ユーザー</label>
+      </div>
+      <div class="radio">
+        <label><input name="admin_flag" type="radio" id="form1_admin_flag_0" value="0" <?php echo ($form->getValue('admin_flag') == '0') ? 'checked' : ''; ?> /> 通常ユーザー</label>
+        <div><small>※ 通常ユーザーを選択した場合は、所属するグループも選択してください</small></div>
+        <div><?php echo $form->getHtml('group_id'); ?></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_valid_flag"><?php echo $form->getDisplayName('valid_flag'); ?>&nbsp;<span class="label label-danger">必須</span></label>
+      <div class="radio" style="margin-top: 0;">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_1" value="1" <?php echo ($form->getValue('valid_flag') == '1') ? 'checked' : ''; ?> /> 有効</label>
+      </div>
+      <div class="radio">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_0" value="0" <?php echo ($form->getValue('valid_flag') == '0') ? 'checked' : ''; ?> /> 無効</label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">　編集　</button>
+    <?php echo $form->getHtml('user_id'); ?>
+  </form>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> ユーザーの編集が完了しました。
+  </div>
+  <div style="margin-top: 20px;">
+    <a href="./"><strong>一覧画面へ</strong></a>
+  </div>
+</div>

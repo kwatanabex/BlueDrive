@@ -1,0 +1,48 @@
+<?php
+$url_table_base = $v->get('App.Admin.url_table_base');
+$crud_display_list = $v->get('crud_display_list');
+
+$action = $v->get('App.Admin.Action');
+?>
+<?php include_once 'header.html'; ?>
+
+<?php include_once 'navbar.html'; ?>
+
+  <div id="container">
+    <div class="row">
+      <div class="col-xs-2">
+        <p><small><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;テーブル一覧</small></p>
+<?php if (is_array($crud_display_list) && (count($crud_display_list) > 0)) { ?>
+        <div class="list-group">
+<?php
+    foreach ($crud_display_list as $name => $display) {
+        $active = ($action == strtolower($name)) ? 'active' : '';
+        $v->echoFormat('<a href="%s%s/" class="list-group-item %s">%s</a>', array($url_table_base, $name, $active, $display));
+    }
+?>
+        </div>
+<?php } else { ?>
+    <p><span style="color: #CC0000;">※未登録</span></p>';
+<?php } ?>
+      </div>
+
+      <div class="col-xs-10">
+        <ol class="breadcrumb">
+<?php
+foreach ($v->get('App.Admin.breadcrumbs') as $name => $url) {
+    if ($url) {
+        echo '<li><a href="' . $url . '">' . htmlspecialchars($name) . '</a>&nbsp;</li>';
+    } else {
+        echo '<li class="active">' . htmlspecialchars($name) . '&nbsp;</li>';
+    }
+}
+?>
+        </ol>
+        <div id="contents">
+          <?php include_once $v->getContentFile(); ?>
+        </div> 
+      </div>
+    </div>
+  </div> 
+
+<?php include_once 'footer.html'; ?>

@@ -1,0 +1,930 @@
+<?php
+$area_list = $v->get('area_list');
+$post_max_size = $v->get('post_max_size');
+?>
+<script type="text/javascript" src="<?php $v->out('App.url_root'); ?>/content/js/jquery.upload.js"></script>
+<script type="text/javascript">
+<!--
+(function($) {
+
+  // 保存領域
+  var areaList = [];
+  var currentArea = null;
+  // ファイルアップロード可能か
+  var enableUpload = false;
+  var opened = {};
+  var currentOpen = false;
+  // ディレクトリの書き込み権限のキャッシュ
+  var dirWrite = {};
+  // ディレクトリ自体の書き込み権限のキャッシュ
+  var dirSelfWrite = {};
+  // 取得したファイルのリスト
+  var fileList = [];
+  // カレントディレクトリ
+  var currentDir = null;
+
+  var baseUrl = null;
+  var xmlHttpDir = null;
+  var xmlHttpFile = null;
+
+	$.fn.fileManager = function(options) {
+    var defaults = {
+      baseUrl: null,
+      areaList: [],
+      enableUpload : false
+    };
+    var setting = $.extend(defaults, options);
+
+    baseUrl = setting.baseUrl;
+    areaList = setting.areaList;
+    enableUpload = setting.enableUpload;
+
+    if (areaList.length == 0) {
+      $('#page1').hide();
+      $('#warning-message-space span:eq(1)').text('ファイル保存領域が登録されていません');
+      $('#warning-message-space').show();
+      return;
+    }
+
+    var pos = baseUrl.indexOf('?');
+    if (pos >= 0) {
+      baseUrl = baseUrl.substr(0, pos);
+    }
+
+    var select = $(this).find('select[name=areaname]');
+    if (select.length > 0) {
+      /**
+       * 保存領域名プルダウン変更イベント
+       */
+      select.change(function() {
+        var id = $(this).val();
+        for (var i in areaList) {
+          if (id == areaList[i].FILE_AREA_ID) {
+            currentArea = areaList[i];
+            $('#fm-rootdir').text(currentArea.ROOT_DIRECTORY);
+            $('#fm-rooturl').text(currentArea.ROOT_URL ? currentArea.ROOT_URL : '');
+            $('#fm-storagetype').text(currentArea.STORAGE_NAME);
+            break;
+          }
+        }
+        initializeDirectory();
+      });
+
+      for (var i in areaList) {
+        select.append('<option value="' + areaList[i].FILE_AREA_ID + '">' + areaList[i].FILE_AREA_NAME + '</option>');
+      }
+
+      $(this).show();
+      select.trigger('change');
+
+    } else {
+      $(this).show();
+      initializeDirectory();
+    }
+  };
+
+  function getCurrentAreaName()
+  {
+    return currentArea.FILE_AREA_NAME;
+  }
+
+  function getCurrentAreaValue()
+  {
+    return currentArea.FILE_AREA_ID;
+  }
+
+  function initializeDirectory()
+  {
+    opened = {};
+    dirWrite = {};
+    dirSelfWrite = {};
+
+    $('#fm-dir-depth')
+      .empty()
+      .append('<div dir="/"><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;<a href="javascript:void(0)"></a></div>');
+    $('#fm-dir-depth > div > a').unbind('click').click(function() {
+      displayDirectoryList('/');
+    })
+    .text(getCurrentAreaName())
+    .appendTo('#fm-dir-depth > div');
+
+    displayDirectoryList('/');
+  }
+
+  function displayDirectoryList(dir)
+  {
+    $('#fm-filelist-alert').hide(); 
+    $('#fm-filelist-warning').hide();
+    $('#fm-filelist .fm-filelist-area').hide();
+    $('#fm-filelist-table').hide();
+
+    $('#fm-dir-depth div[dir!="/"] > span')
+      .removeClass('glyphicon-folder-open')
+      .addClass('glyphicon-folder-close');
+
+    if (dir != '/') {
+      var dirs = dir.substr(1, dir.length - 2).split('/');
+      var tempdir = '/';
+      for (var i in dirs) {
+        tempdir += dirs[i] + '/';
+        $('#fm-dir-depth div[dir="' + tempdir + '"] > span:eq(0)')
+          .removeClass('glyphicon-folder-close')
+          .addClass('glyphicon-folder-open');
+      }
+    }
+
+    var names = getDirectoryNames(dir);
+    var name = (names.length > 0) ? names[names.length - 1] : getCurrentAreaName();
+    $('#fm-filelist-name span:eq(1)').text(name);
+
+    if (currentDir != dir) {
+      currentOpen = false;
+    }
+
+    currentDir = dir;
+
+    if (opened[dir]) {
+      $('#fm-dir-depth div[dir^="' + dir + '"]').each(function() {
+        if ($(this).attr('dir') != dir) {
+          if (currentOpen) {
+            $(this).hide();
+          } else {
+            $(this).show();
+          }
+        }
+      });
+
+      if (!currentOpen) {
+        getFileList(dir);
+      }
+      currentOpen = !currentOpen;
+
+      return;
+    }
+
+    if (xmlHttpDir) {
+      xmlHttpDir.abort();
+      xmlHttpDir = null;
+    }
+
+    var margin = String((names.length + 1) * 12) + 'px';
+
+    $('<div class="loading">検索しています...</div>')
+      .css({'margin-left': margin})
+      .insertAfter('#fm-dir-depth [dir="' + dir + '"]');
+
+    xmlHttpDir = $.ajax({
+      type: "POST",
+      url: baseUrl,
+      data: {
+        'id': getCurrentAreaValue(),
+        'dir' : dir,
+        'action': 'dir'
+      },
+      dataType: 'json',
+      complete: function() {
+        $('#fm-dir-depth div[class=loading]').remove();
+        xmlHttpDir = null;
+      },
+      error: function(xmlHttp, status, error) {
+        if (status != 'abort') {
+          $('<div class="alert alert-danger">ディレクトリ一覧の取得中にエラーが発生しました</div>')
+            .css({'margin-left': margin})
+            .insertAfter('#fm-dir-depth [dir="' + dir + '"]');
+        }
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          $('<div class="alert alert-danger">ディレクトリ一覧の取得中にエラーが発生しました</div>')
+            .css({'margin-left': margin})
+            .insertAfter('#fm-dir-depth [dir="' + dir + '"]');
+          return;
+        }
+
+        var dirs = result['dirs'];
+        dirs.sort(function(a, b) {
+          return a['name'].localeCompare(b['name']);
+        });
+
+        for (var i in dirs.reverse()) {
+          $('<div><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;<a href="javascript:void(0)"></a></div>')
+            .css({'margin-left': margin, 'margin-bottom': '2px'})
+            .attr({'dir': dir + dirs[i].name + '/'})
+            .insertAfter('#fm-dir-depth div[dir="' + dir + '"]');
+          $('#fm-dir-depth div[dir="' + dir + dirs[i].name + '/' + '"] a')
+            .unbind('click')
+            .text(dirs[i].name)
+            .click(function() {
+              displayDirectoryList($(this).parent().attr('dir'));
+            });
+        }
+
+        opened[dir] = true;
+        currentOpen = true;
+        dirWrite[dir] = result['write'];
+        dirSelfWrite[dir] = result['selfWrite'];
+      }
+    });
+
+    getFileList(dir);
+  }
+
+  function getFileList(dir)
+  {
+    if (xmlHttpFile) {
+      xmlHttpFile.abort();
+      xmlHttpFile = null;
+    }
+
+    $('#fm-filelist-table').hide();
+    $('#fm-filelist-table table tbody').empty();
+    $('#fm-filelist-loading').show();
+
+    xmlHttpFile = $.ajax({
+      type: 'POST',
+      url: baseUrl,
+      data: {
+        'id': getCurrentAreaValue(),
+        'dir' : dir,
+        'action': 'file'
+      },
+      dataType: 'json',
+      complete: function() {
+        $('#fm-filelist-loading').hide();
+        xmlHttpFile = null;
+      },
+      error: function(xmlHttp, status, error) {
+        if (status != 'abort') {
+          displayFileListAlert('ファイル一覧の取得中にエラーが発生しました');
+        }
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          displayFileListAlert('ファイル一覧の取得中にエラーが発生しました');
+          return;
+        }
+
+        if (result['dir'] != currentDir) {
+          return;
+        }
+
+        fileList = result['files'];
+        if (fileList.length == 0) {
+          displayFileListWarn('ファイルがありません');
+        } else {
+          displayFileList(dir, 'name', true);
+          $('#fm-filelist-table').show();
+        }
+      }
+    });
+  }
+
+  function displayFileList(dir, name, asc)
+  {
+    $('#fm-filelist-table table tbody').empty();
+
+    $('#fm-filelist-table table thead tr th a').removeClass('asc').removeClass('desc');
+    $('#fm-filelist-table table thead tr th a span').removeAttr('class');
+
+    if (asc) {
+      $('#fm-filelist-table table thead tr th a[rel=' + name + ']').addClass('asc');
+      $('#fm-filelist-table table thead tr th a[rel=' + name + '] span').addClass('glyphicon glyphicon-chevron-down');
+    } else {
+      $('#fm-filelist-table table thead tr th a[rel=' + name + ']').addClass('desc');
+      $('#fm-filelist-table table thead tr th a[rel=' + name + '] span').addClass('glyphicon glyphicon-chevron-up');
+    }
+
+    fileList.sort(function(a, b) {
+      if (typeof a[name] == 'string') {
+        return asc ? a[name].localeCompare(b[name]) : b[name].localeCompare(a[name]);
+      } else {
+        return asc ? a[name] - b[name] : b[name] - a[name];
+      }
+    });
+
+    for (var i in fileList) {
+      var name = fileList[i]['name'];
+      var downloadUrl = baseUrl + '?id=' + getCurrentAreaValue() + '&file=' + encodeURIComponent(dir + name) + '&action=download';
+      var size = parseInt(fileList[i]['size'], 10);
+      size = String(Math.ceil(size / 1024));
+      size = $.BlueDriveUtil.formatNumber(size) + ' KB';
+
+      $('#fm-filelist-table table tbody').append('<tr />');
+      var tr = $('#fm-filelist-table table tbody tr:last');
+      if (dirWrite[dir]) {
+        tr.append('<td style="text-align: center;"><input type="checkbox" name="remove" value="' + $.BlueDriveUtil.encodeHtml(name) + '" /></td>');
+      } else {
+        tr.append('<td style="text-align: center;"> </td>');
+      }
+      if (name.match(/(\.png|\.jpg|\.gif)$/i)) {
+        var previewUrl = '';
+        if (currentArea.ROOT_URL) {
+          if (currentArea.ROOT_URL.match(/^(.+)\/$/)) {
+            previewUrl = RegExp.$1 + dir + name;
+          } else {
+            previewUrl = currentArea.ROOT_URL + dir + name;
+          }
+        } else {
+          previewUrl = baseUrl + '?id=' + getCurrentAreaValue() + '&file=' + encodeURIComponent(dir + name) + '&action=preview';
+        }
+        tr.append('<td><a href="' + downloadUrl + '" title="' + $.BlueDriveUtil.encodeHtml(name) + '（クリックでダウンロード）">' + $.BlueDriveUtil.encodeHtml(name) + '</a> <a href="' + previewUrl + '" target="_blank" title="プレビュー" rel="preview"><span class="glyphicon glyphicon-search"></span></a></td>');
+      } else {
+        tr.append('<td><a href="' + downloadUrl + '" title="' + $.BlueDriveUtil.encodeHtml(name) + '（クリックでダウンロード）" rel="download">' + $.BlueDriveUtil.encodeHtml(name) + '</a></td>');
+      }
+      tr.append('<td style="text-align:right;">' + size + '</td>');
+      tr.append('<td style="text-align:center;">' + fileList[i]['mtime'] + '</td>');
+      tr.append('<td style="text-align:center;">' + fileList[i]['perm'] + '</td>');
+      tr.append('<td>' + fileList[i]['owner'] + '</td>');
+    }
+
+    // 削除選択イベント
+    $('#fm-filelist-table table tbody input[type=checkbox]').unbind('click').click(function(){
+      if ($(this).prop('checked')) {
+        $(this).closest('tr').addClass('warning');
+      } else {
+        $(this).closest('tr').removeClass('warning');
+      }
+    });
+  }
+
+  function displayFileListAlert(message)
+  {
+    $('#fm-filelist-warning').hide();
+    $('#fm-filelist-alert span:eq(1)').text(message);
+    $('#fm-filelist-alert').show();
+  }
+
+  function displayFileListWarn(message)
+  {
+    $('#fm-filelist-warning span:eq(1)').text(message);
+    $('#fm-filelist-warning').show();
+  }
+
+  function changeUploadFile()
+  { 
+    if ($(this).val() == '') {
+      return;
+    }
+
+    var name = $(this).val();
+    var pos = name.lastIndexOf('\\');
+    if (pos >= 0) { 
+      name = name.substr(pos+1);
+    } else { 
+      pos = name.lastIndexOf('/');
+      if (pos >= 0) { 
+        name = name.substr(pos+1);
+      } 
+    }
+
+    $(this).parent().prepend('<span>+ ' + name + '　<a href="javascript:void(0);">[ 削除 ]</a></span>');
+    $(this).parent().find('a').click(function(){
+      $(this).parent().parent().remove();
+    });
+    $(this).hide();
+
+    addUploadFile();
+  }
+
+  function addUploadFile()
+  {
+    $('#fm-filelist-upload-files').prepend('<div style="margin-bottom: 6px;"><input type="file" name="uploadfile[]" /></div>');
+    $('#fm-filelist-upload-files input[type=file]').unbind('change');
+    $('#fm-filelist-upload-files input[type=file]:eq(0)').change(changeUploadFile).show();
+  }
+
+  function displayFileLoading(message)
+  {
+    $('#fm-filelist-loading').show();
+  }
+
+  function hideFileLoading()
+  {
+    $('#fm-filelist-loading').hide();
+  }
+
+  function hideFileArea()
+  {
+    hideFileErrorArea();
+    $('#fm-filelist .fm-filelist-area').hide();
+  }
+
+  function hideFileErrorArea()
+  {
+    $('#fm-filelist-alert').hide();
+    $('#fm-filelist-warning').hide();
+  }
+
+  function getDirectoryNames(dir)
+  {
+    var names = [];
+    var tmps = dir.split('/');
+    for (var i in tmps) {
+      if (tmps[i] != '') {
+        names.push(tmps[i]);
+      }
+    }
+    return names;
+  }
+
+  /**
+   * ディレクトリ更新リンクイベント
+   */
+  $(document).on('click', '#fm-dir-title a', function () { 
+    initializeDirectory();
+  });
+
+  /**
+   * アップロード／フォルダ作成などボタン押下イベント
+   */
+  $(document).on('click', '#fm-filelist-buttons input[type=button]', function () { 
+    var id = '#fm-filelist-' + this.name;
+    var div = $(id);
+    if (div.length == 0) {
+      return;
+    }
+
+    hideFileArea();
+
+    switch (this.name) {
+    case 'fileupload':
+      if (!enableUpload) {
+        displayFileListAlert('サーバー側の設定によりファイルアップロードができません。php.ini の file_uploads を有効にしてください。');
+        return;
+      }
+      if (!dirWrite[currentDir]) {
+        displayFileListAlert('フォルダに書き込む権限がありません');
+        return;
+      }
+      if ($('#fm-filelist-upload-files input[type=file][name="uploadfile[]"]').length == 0) {
+        addUploadFile();
+      }
+      break;
+
+    case 'dircreate':
+      if (!dirWrite[currentDir]) {
+        displayFileListAlert('フォルダに書き込む権限がありません');
+        return;
+      }
+      break;
+
+    case 'dirdelete':
+      var currentName = $('#fm-filelist-name span:eq(1)').text();
+      if (currentName == getCurrentAreaName()) {
+        displayFileListAlert('ルートフォルダは削除できません');
+        return;
+      }
+      if (!dirSelfWrite[currentDir]) {
+        displayFileListAlert('フォルダを削除する権限がありません');
+        return;
+      }
+
+      var remove = true;
+      $('#fm-dir-depth div[dir^="' + currentDir + '"]').each(function(){
+        if ($(this).attr('dir') != currentDir) {
+          remove = false;
+          return true;
+        }
+      });
+      if (!remove) {
+        displayFileListAlert('フォルダが存在するので削除できません。（フォルダを削除する場合は、そのディレクトリが空でなければなりません）');
+        return;
+      }
+
+      if ($('#fm-filelist-table table tbody tr:eq(0) td').length > 0) {
+        displayFileListAlert('ファイルが存在するので削除できません。（フォルダを削除する場合は、そのディレクトリが空でなければなりません）');
+        return;
+      }
+      break;
+    
+    case 'filedelete':
+      if ($('#fm-filelist-table table input[type=checkbox]').length == 0) {
+        displayFileListAlert('削除するファイルがありません');
+        return;
+      }
+      if ($('#fm-filelist-table table input[type=checkbox]:checked').length == 0) {
+        displayFileListAlert('削除するファイルを選択してください');
+        return;
+      }
+      break;
+    }
+
+    if (div.css('display') != 'none') { 
+      $('#fm-filelist table').show();
+    } else {
+      div.show();
+    }
+  });
+
+  /**
+   * アップロード実行ボタン押下イベント
+   */
+  $(document).on('click', '#fm-filelist-fileupload input[type=button]', function () { 
+    $('#fm-filelist-table').hide();
+    hideFileErrorArea();
+
+    if ($('#fm-filelist-upload-files input[type=file][name="uploadfile[]"]:hidden').length == 0) { 
+      displayFileListAlert('ファイルを選択してください'); 
+      return; 
+    }
+
+    // アップロードファイル先頭要素は空なので無効化
+    $('#fm-filelist-upload-files input[type=file][name="uploadfile[]"]:visible').prop('disabled', true);
+
+    displayFileLoading('アップロードしています...');
+    $('#fm-filelist-fileupload').hide();
+
+    var data = {};
+    data['action'] = 'upload';
+    data['id'] = getCurrentAreaValue();
+    data['dir'] = currentDir;
+    $('#fm-filelist-fileupload').upload(baseUrl, data, function(result) {
+      hideFileLoading();
+
+      $('#fm-filelist-upload-files input[type=file][name="uploadfile[]"]').prop('disabled', false);
+
+      if (!result.valid) {
+        displayFileListAlert('アップロード中にエラーが発生しました');
+        $('#fm-filelist-fileupload').show();
+        return;
+      }
+
+      $('#fm-filelist-upload-files').empty();
+      currentOpen = false;
+      displayDirectoryList(currentDir);
+    }, 'json'); 
+  });
+
+  /**
+   * フォルダ作成実行ボタン押下イベント
+   */
+  $(document).on('click', '#fm-filelist-dircreate input[type=button]', function () { 
+    $('#fm-filelist-table').hide();
+    hideFileErrorArea();
+
+    var dirname = $('#fm-filelist-dircreate input[type=text]').val();
+    if (dirname == '') {
+      displayFileListAlert('フォルダ名を入力してください');
+      return;
+    }
+    var invalidString = '\\\\/:\\*\\?"<>\\|\\[\\] ';
+
+    if (dirname.match(new RegExp('[' + invalidString + ']', 'i'))) {
+      displayFileListAlert('フォルダ名に使用できない文字が含まれています（' + invalidString + 'と半角スペース）');
+      return;
+    }
+
+    // 存在チェック
+    if ($('#fm-dir-depth div[dir="' + currentDir + dirname + '/"]').length > 0) {
+      displayFileListAlert('既に同名のフォルダが存在しています');
+      return;
+    }
+
+    $('#fm-filelist-dircreate').hide();
+    displayFileLoading('フォルダを作成しています...');
+
+    $.ajax({
+      type: 'POST',
+      url: baseUrl,
+      data: {
+        'id': getCurrentAreaValue(),
+        'dir' : currentDir,
+        'dirname' : dirname,
+        'action': 'dircreate'
+      },
+      dataType: 'json',
+      complete: function() {
+        hideFileLoading();
+      },
+      error: function() {
+        displayFileListAlert('フォルダ作成中にエラーが発生しました');
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          displayFileListAlert('フォルダ作成中にエラーが発生しました');
+          $('#fm-filelist-dircreate').show();
+          return;
+        }
+
+        $('#fm-filelist-dircreate input[type=text]').val('');
+
+        var re = new RegExp('^' + currentDir);
+        currentOpen = false;
+        for (var dir in opened) {
+          if (dir.match(re)) {
+            opened[dir] = false;
+          }
+        }
+
+        $('#fm-dir-depth div[dir^="' + currentDir + '"]').each(function(){
+          var dir = $(this).attr('dir');
+          if (dir != currentDir) {
+            $(this).remove();
+          }
+        });
+
+        displayDirectoryList(currentDir);
+      }
+    });
+  });
+
+  /**
+   * フォルダ削除実行ボタン押下イベント
+   */
+  $(document).on('click', '#fm-filelist-dirdelete input[type=button]', function () { 
+    var remove = true;
+    $('#fm-dir-depth div[dir^="' + currentDir + '"]').each(function(){
+      if ($(this).attr('dir') != currentDir) {
+        remove = false;
+        return true;
+      }
+    });
+    if (!remove) {
+      displayFileListAlert('フォルダが存在するので削除できません。（フォルダを削除する場合は、そのディレクトリが空でなければなりません）');
+      return;
+    }
+
+    if ($('#fm-filelist-table table tbody tr:eq(0) td').length > 0) {
+      displayFileListAlert('ファイルが存在するので削除できません。（フォルダを削除する場合は、そのディレクトリが空でなければなりません）');
+      return;
+    }
+
+
+    $('#fm-filelist-table').hide();
+    hideFileArea();
+
+    displayFileLoading('フォルダを削除しています...');
+
+    $.ajax({
+      type: 'POST',
+      url: baseUrl,
+      data: {
+        'id': getCurrentAreaValue(),
+        'dir' : currentDir,
+        'action': 'dirdelete'
+      },
+      dataType: 'json',
+      complete: function() {
+        hideFileLoading();
+      },
+      error: function() {
+        displayFileListAlert('フォルダ削除中にエラーが発生しました');
+        $('#fm-filelist-dirdelete').show();
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          displayFileListAlert('フォルダ削除中にエラーが発生しました');
+          $('#fm-filelist-dirdelete').show();
+          return;
+        }
+
+        var pos = currentDir.substr(0, currentDir.length -1).lastIndexOf('/');
+        currentDir = currentDir.substr(0, pos+1);
+
+        var re = new RegExp('^' + currentDir);
+        currentOpen = false;
+        for (var dir in opened) {
+          if (dir.match(re)) {
+            opened[dir] = false;
+          }
+        }
+
+        $('#fm-dir-depth div[dir^="' + currentDir + '"]').each(function(){
+          if ($(this).attr('dir') != currentDir) {
+            $(this).remove();
+          }
+        });
+
+        displayDirectoryList(currentDir);
+      }
+    });
+  });
+
+  /**
+   * ファイル削除実行ボタン押下イベント
+   */
+  $(document).on('click', '#fm-filelist-filedelete input[type=button]', function () { 
+    hideFileErrorArea();
+
+    var files = [];
+    $('#fm-filelist table input[type=checkbox]:checked').each(function(){
+      files.push($(this).val());
+    });
+
+    if (files.length == 0) {
+      displayFileListAlert('削除するファイルを選択してください');
+      return;
+    }
+
+    $.ajax({
+      type: 'POST',
+      url: baseUrl,
+      data: {
+        'id': getCurrentAreaValue(),
+        'dir' : currentDir,
+        'filename[]': files,
+        'action': 'filedelete'
+      },
+      dataType: 'json',
+      complete: function() {
+        hideFileLoading();
+      },
+      error: function() {
+        displayFileListAlert('ファイル削除中にエラーが発生しました');
+        $('#fm-filelist-dirdelete').show();
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          displayFileListAlert('ファイル削除中にエラーが発生しました');
+          $('#fm-filelist-dirdelete').show();
+          return;
+        }
+
+        currentOpen = false;
+        displayDirectoryList(currentDir);
+      }
+    });
+  });
+
+  /**
+   * ファイルリストのヘッダリンク各種
+   */
+  $(document).on('click', '#fm-filelist table tr th a', function() {
+    var asc = $(this).hasClass('asc');
+    var rel = $(this).attr('rel');
+    if (rel == 'select') {
+      var checkLen = $('#fm-filelist table input[type=checkbox]').length;
+      if (checkLen > 0) {
+        var checkedLen = $('#fm-filelist table input[type=checkbox]:checked').length;
+        if (checkLen == checkedLen) {
+          $('#fm-filelist table input[type=checkbox]').prop('checked', false);
+          $('#fm-filelist table tbody tr').removeClass('remove');
+        } else {
+          $('#fm-filelist table input[type=checkbox]').prop('checked', true);
+          $('#fm-filelist table tbody tr').addClass('remove');
+        }
+      }
+    } else {
+      displayFileList(currentDir, rel, !asc);
+    }
+  });
+
+})(jQuery);
+
+
+$(function() {
+  $('#fm').fileManager({
+    'baseUrl': window.location.href,
+    'areaList': <?php echo json_encode($area_list); ?>,
+    'enableUpload': <?php echo ini_get('file_uploads') ? 'true' : 'false'; ?>
+  });
+});
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　ファイル管理<br />
+  <small>サーバー上にある物理ファイルを管理します。ディレクトリ階層は、サーバー上のディレクトリ階層とファイルを確認します。</small></h1>
+</div>
+
+<div id="warning-message-space" class="alert alert-warning" style="display:none;">
+  <span class="glyphicon glyphicon-warning-sign"></span> <span></span>
+</div>
+
+  <div id="page1">
+    <div id="fm">
+      <form method="post" role="form">
+      <div>
+        <div><span class="glyphicon glyphicon-search"></span> <strong>ファイル保存領域</strong></div>
+        <table class="table">
+          <tr>
+            <th style="width: 140px;">保存領域名</th>
+            <td><select name="areaname" class="form-control"></select></td>
+            <th style="width: 160px;">ルートディレクトリ</th>
+            <td><span id="fm-rootdir"></span></td>
+          </tr>
+          <tr>
+            <th>ストレージタイプ</th>
+            <td><span id="fm-storagetype"></span></td>
+            <th>ルートURL</th>
+            <td><span id="fm-rooturl"></span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="row">
+        <div id="fm-dir" class="col-xs-3">
+          <div class="panel panel-default">
+            <div id="fm-dir-title" class="panel-heading">ディレクトリ階層 <a href="javascript:void(0);"><span class="glyphicon glyphicon-refresh"></span></a></div>
+            <div id="fm-dir-depth" class="panel-body"></div>
+          </div>
+        </div>
+        <div id="fm-filelist" class="col-xs-9" style="padding-left: 0;">
+          <div class="panel panel-default" style="margin-bottom: 10px;">
+            <div class="panel-heading">
+              <div class="row">
+                <div id="fm-filelist-name" class="col-xs-3" style="margin-top:8px"><strong><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;<span></span></strong></div>
+                <div id="fm-filelist-buttons" class="col-xs-9 text-right">
+                  <input type="button" name="fileupload" class="btn btn-default" value="アップロード" />
+                  <input type="button" name="dircreate" class="btn btn-default" value="フォルダ作成" />
+                  <input type="button" name="dirdelete" class="btn btn-default" value="フォルダ削除" /> 
+                  <input type="button" name="filedelete" class="btn btn-default" value="選択を削除" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="fm-filelist-warning" class="alert alert-warning" style="display:none;">
+            <span class="glyphicon glyphicon-warning-sign"></span> <span></span>
+          </div>
+
+          <div id="fm-filelist-alert" class="alert alert-danger" style="display:none;margin-bottom: 10px;">
+            <span class="glyphicon glyphicon-warning-sign"></span> <span></span>
+          </div>
+
+          <div id="fm-filelist-loading" class="well" style="display: none;">
+            <span class="glyphicon glyphicon-time"></span> ファイルを取得しています...
+          </div>
+
+          <div id="fm-filelist-fileupload" class="fm-filelist-area"> 
+            <div class="panel panel-default" style="margin-bottom: 10px;">
+              <div class="panel-body">
+                <h4><span class="glyphicon glyphicon-upload"></span>&nbsp;&nbsp;ファイルアップロード</h4>
+                <div class="form-group">
+                  <div id="fm-filelist-upload-files" style="margin-bottom: 12px;"></div>
+                </div>
+                <p><input type="button" class="btn btn-primary" value="アップロードを実行する" /></p>
+                <div class="alert alert-warning" style="margin-bottom: 0;">
+                  ※ ファイル名が重複する場合は上書きされます。<br />
+                  ※ アップロード可能な最大サイズは、<?php echo $post_max_size; ?> です。変更する場合は、サーバー上の設定を変更する必要があります。
+                </div> 
+              </div>
+            </div>
+          </div>
+
+          <div id="fm-filelist-dircreate" class="fm-filelist-area"> 
+            <div class="panel panel-default" style="margin-bottom: 10px;">
+              <div class="panel-body">
+                <h4><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;フォルダの作成</h4>
+                <div class="form-group">
+                  <input type="text" class="form-control" placeholder="フォルダ名を入力してください" />
+                </div>
+                <p><input type="button" class="btn btn-primary" value="フォルダを作成する" /></p>
+                <div class="alert alert-warning" style="margin-bottom: 0;">
+                  ※ 次の文字は使用できません。「 \/:*?"<>|[] 」と半角スペース。
+                </div> 
+              </div>
+            </div>
+          </div>
+
+          <div id="fm-filelist-dirdelete" class="fm-filelist-area"> 
+            <div class="panel panel-default" style="margin-bottom: 10px;">
+              <div class="panel-body">
+                <h4><span class="glyphicon glyphicon-remove-circle"></span>&nbsp;&nbsp;フォルダの削除</h4>
+                <p>現在選択されているフォルダを削除します。</p> 
+                <input type="button" class="btn btn-primary" value="フォルダを削除する" />
+              </div>
+            </div>
+          </div>
+
+          <div id="fm-filelist-filedelete" class="fm-filelist-area"> 
+            <div class="panel panel-default" style="margin-bottom: 10px;">
+              <div class="panel-body">
+                <h4><span class="glyphicon glyphicon-remove-circle"></span>&nbsp;&nbsp;選択したファイルの削除</h4>
+                <p>現在選択されているファイル（背景が黄色のファイル）を削除します。</p> 
+                <input type="button" class="btn btn-primary" value="ファイルを削除する" />
+              </div>
+            </div>
+          </div>
+
+          <div id="fm-filelist-table"> 
+            <table class="table table-bordered bd-table-list">
+              <thead>
+                <tr>
+                  <th style="width: 20px; text-align: center;"><a href="javascript:void(0);" rel="select" title="全ファイルを選択">&#xD7;</a></th>
+                  <th><a href="javascript:void(0);" rel="name" title="ファイル名で並び替え">ファイル名 <span></span></a></th>
+                  <th style="width: 100px; text-align: right;"><a href="javascript:void(0);" rel="size" title="サイズで並び替え">サイズ <span></span></a></th>
+                  <th style="width: 160px; text-align: center;"><a href="javascript:void(0);" rel="mtime" title="更新日時で並び替え">更新日時 <span></span></a></th>
+                  <th style="width: 70px; text-align: center;"><a href="javascript:void(0);" rel="perm" title="権限で並び替え">権限 <span></span></a></th>
+                  <th><a href="javascript:void(0);" rel="owner" title="所有者で並び替え">所有者 <span></span></a></th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      </form>
+    </div>
+
+ファイル名変更／パーミッション変更／選択モード<br />
+ファイル名をクリックで、選択する。右にプレビューアイコン。<br />
+プレビューは画像のみ<br />
+
+  </div>

@@ -1,0 +1,21 @@
+<?php
+$url_base = $v->get('App.url_base');
+?>
+<?php include_once 'header.html'; ?>
+
+  <header class="navbar navbar-inverse navbar-fixed-top bd-nav" role="navigation">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="<?php echo $url_base; ?>">BlueDrive</a>
+    </div>
+  </header>
+
+  <div id="container">
+    <ol class="breadcrumb">
+      <li class="active"></li>
+    </ol>
+    <div id="contents">
+      <?php include_once $v->getContentFile(); ?>
+    </div> 
+  </div>
+
+<?php include_once 'footer.html'; ?>

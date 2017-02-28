@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  フレームワークカスタムクラス設定ファイル（classes.xml）
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/classes.html
+-->
+<syl-classes xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-classes.xsd">
+  <data></data>
+  <error-handler></error-handler>
+  <request></request>
+  <response></response>
+  <router></router>
+  <user></user>
+  <session></session>
+  <user></user>
+</syl-classes>

@@ -1,0 +1,384 @@
+<?php
+$form = $v->get('form');
+$realm_list = $v->get('realm_list');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var group_id = $('form[name="editForm"] input[name=group_id]').val();
+    var group_name = $('form[name="editForm"] input[name=group_name]').val();
+    var description = $('form[name="editForm"] textarea[name=description]').val();
+    var valid_flag = $('form[name="editForm"] input[name=valid_flag]:checked').val();
+
+    if (group_name == '') {
+      showAlertMessage('グループ名が入力されていません');
+      return false;
+    }
+
+    if (valid_flag == '') {
+      showAlertMessage('状態が選択されていません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "type": 'edit',
+        "group_id": group_id,
+        "group_name": group_name,
+        'description': description,
+        "valid_flag" : valid_flag
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+
+  function getRealmList()
+  {
+    $('#alert-message-space-related-realm').hide();
+    $('#list-realm').empty();
+    $('#page-related-realm .page-info div').empty();
+    $('#processing-related-realm').show();
+
+    var group_id = $('form[name="editForm"] input[name=group_id]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'list',
+        'group_id': group_id
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessageRelatedRealm(response.message);
+            return;
+          }
+        }
+        showAlertMessageRelatedRealm('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      complete: function () {
+        $('#processing-related-realm').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'])
+        } else {
+          showAlertMessageRelatedRealm('検索中にエラーが発生しました<br />' + result['message']);
+        }
+      }
+    });
+  }
+
+  function displayList(rows)
+  {
+    if (rows.length == 0) {
+      showAlertMessageRelatedRealm('データが見つかりませんでした。右側の「追加と削除」ボタンからアクセス範囲を登録してください。');
+      return;
+    }
+
+    var row_count = rows.length;
+    var row_max = rows.length;
+
+    $('.page-info div:eq(0)').append('<span>全 ' + String(row_count) + ' 件</span>');
+
+    var listId = '#list-realm';
+    $(listId).append('<table class="table table-bordered bd-table-list"><thead /><tbody /></table>');
+
+    $(listId + ' table thead').append('<tr />');
+    $(listId + ' table thead tr').append('<th style="width: 80px;">ID</th>');
+    $(listId + ' table thead tr').append('<th>範囲名</th>');
+    $(listId + ' table thead tr').append('<th>アクセス範囲</th>');
+    $(listId + ' table thead tr').append('<th style="width: 60px;" class="text-center">状態</th>');
+
+    for (var i in rows) {
+      var row_class = '';
+      if (rows[i]['VALID_FLAG'] == '1') {
+        state_name = '有効';
+      } else {
+        state_name = '無効';
+        row_class = 'active';
+      }
+
+      $(listId + ' table tbody').append('<tr class="' + row_class + '" />');
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM_ID']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM']);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"></td>');
+      $(listId + ' table tbody tr:last td:last').text(state_name);
+    }
+  }
+
+  function showAlertMessageRelatedRealm(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    $('#alert-message-space-related-realm').empty();
+
+    for (var i in messages) {
+      $('#alert-message-space-related-realm').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space-related-realm div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space-related-realm').show();
+  }
+
+  $(document).on('click', '#page-related-realm form input[name="new_remove"]', function() {
+    $('#realm-dialog-main input[name=realm_id]').prop('checked', false);
+    $('#list-realm table tbody tr td:first-child').each(function() {
+      $('#realm-dialog-main input[name=realm_id][value="' + $(this).text() + '"]').prop('checked', true);
+    });
+
+    $('#realm-dialog-complete').hide();
+    $('#realm-dialog-error').hide();
+    $('#realm-dialog-processing').hide();
+    $('#realm-dialog-main').show();
+    $.colorbox({'inline':true, 'width':"800px", 'max-height': '600px', 'href' :"#realm-dialog"});
+  });
+
+  $(document).on('click', '#realm-dialog form input[name="update"]', function() {
+    $('#realm-dialog-complete').hide();
+    $('#realm-dialog-error').hide();
+    $('#realm-dialog-main').hide();
+    $('#realm-dialog-processing').show();
+
+    var realm_ids = [];
+    $('#realm-dialog form input[name="realm_id"]:checked').each(function() {
+      realm_ids.push($(this).val());
+    });
+
+    var group_id = $('form[name="editForm"] input[name=group_id]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'update',
+        'realm_ids': realm_ids.join(','),
+        'group_id': group_id
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessageRelatedRealmDialog(response.message);
+            return;
+          }
+        }
+        showAlertMessageRelatedRealmDialog('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      complete: function () {
+        $('#realm-dialog-processing').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $('#realm-dialog-complete').show();
+        } else {
+          showAlertMessageRelatedRealmDialog('更新中にエラーが発生しました<br />' + result['message']);
+        }
+      }
+    });
+  });
+
+  $(document).on('click', '#realm-dialog-complete input[name="back"]', function() {
+    $.colorbox.close();
+    getRealmList();
+  });
+
+  function showAlertMessageRelatedRealmDialog(message)
+  {
+    for (var i in messages) {
+      $('#realm-dialog-error div').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#realm-dialog-error div div:last .alert-message').text(messages[i]);
+    }
+    $('#realm-dialog-error').show();
+  }
+
+  getRealmList();
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　グループ管理 ／ 変更<br />
+  <small>BlueDriveを利用するユーザーが所属するグループ内容を変更します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;"></div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <div class="well well-sm">
+    <div><span class="glyphicon glyphicon-info-sign"></span> <strong>登録日付</strong> <?php echo $form->getValue('i_date'); ?>&nbsp;&nbsp;<strong>更新日付</strong> <?php echo $form->getValue('u_date'); ?></div>
+  </div>
+
+  <form name="editForm" method="post" role="form">
+<?php foreach ($form->getElementNames() as $name) { ?>
+    <div class="form-group">
+<?php
+  echo '<label>' . $form->getDisplayName($name);
+  if ($form->isRequire($name)) {
+      echo '&nbsp;<span class="label label-danger">必須</span>';
+  }
+  echo '</label><br />';
+  echo $form->getHtml($name);
+?>
+    </div>
+<?php } ?>
+    <button type="submit" class="btn btn-primary">　変更　</button>
+    <?php echo $form->getHtml('group_id'); ?>
+  </form>
+
+  <div id="page-related-realm" style="padding-top: 20px;">
+    <div class="page-header">
+      <div class="row">
+        <div class="col-xs-9">
+          <h2><span class="glyphicon glyphicon-list-alt"></span>　グループに含まれるアクセス範囲</h2>
+        </div>
+        <div class="col-xs-3 text-right" style="padding-top: 10px;">
+          <form name="realmForm" method="post" role="form">
+          <input type="button" name="new_remove" class="btn btn-default" value="　追加と削除　" />
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert-message-space-related-realm" class="alert alert-danger" style="display:none;"></div>
+
+    <div id="processing-related-realm" class="well" style="display:none;">
+      <span class="glyphicon glyphicon-time"></span> 処理しています…
+    </div>
+
+    <div>
+      <form name="listForm" method="post" role="form">
+      <div class="row page-info" style="margin-bottom: 4px;">
+        <div class="col-xs-4"></div>
+        <div class="col-xs-8 text-right"></div>
+      </div>
+      <div id="list-realm"></div>
+      </form>
+    </div>
+
+    <div style='display:none'>
+      <div id="realm-dialog" class="bd-dialog-mini">
+        <form name="realmDialogForm" method="post" role="form">
+        <h3><span class="glyphicon glyphicon-retweet"></span> アクセス範囲の追加と削除</h3>
+<?php if (count($realm_list) > 0) { ?>
+        <div id="realm-dialog-main">
+          <table class="table table-bordered bd-table-list">
+            <thead>
+              <tr>
+                <th style="width: 40px;"></th>
+                <th>範囲名</th>
+                <th>アクセス範囲</th>
+              </tr>
+            </thead>
+            <tbody>
+<?php foreach ($realm_list as $row) { ?>
+              <tr class="<?php echo ($row->VALID_FLAG == '0') ? 'active' : ''; ?>">
+                <td class="text-center"><input type="checkbox" name="realm_id" value="<?php echo $row->REALM_ID; ?>" /></td>
+                <td><?php echo htmlspecialchars($row->REALM_NAME); ?></td>
+                <td><?php echo htmlspecialchars($row->REALM); ?></td>
+              </tr>
+<?php } ?>
+            </tbody>
+          </table>
+          <div>
+            <input type="button" name="update" class="btn btn-primary" value="　更新　" /> 
+            <input type="button" name="back" class="btn btn-default" value="　閉じる　" onclick="$.colorbox.close();" />
+          </div>
+        </div>
+<?php } else { ?>
+        <div class="alert alert-warning">
+          <p><span class="glyphicon glyphicon-warning-sign"></span> アクセス範囲が登録されていません。アクセス範囲管理から登録してください。</p>
+        </div>
+        <p><input type="button" class="btn btn-default" value="　閉じる　" onclick="$.colorbox.close();" /></p>
+<?php } ?>
+        <div id="realm-dialog-processing" class="alert alert-info" style="display:none;">
+          <p>データを処理しています…</p>
+        </div>
+        <div id="realm-dialog-complete" style="display:none;">
+          <div class="alert alert-success">
+            アクセス範囲の追加と削除が完了しました。
+          </div>
+          <p><input type="button" name="back" class="btn btn-default" value="　閉じる　" /></p>
+        </div>
+        <div id="realm-dialog-error" style="display:none;">
+          <div class="alert alert-danger">
+            システムエラーが発生しました。管理者にお問い合わせください。
+          </div>
+          <p><input type="button" name="back" class="btn btn-default" value="　閉じる　" onclick="$.colorbox.close();" /></p>
+        </div>
+        <button id="cboxClose" type="button">close</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> グループの変更が完了しました。
+  </div>
+  <div style="margin-top: 20px;">
+    <a href="./"><strong>一覧画面へ</strong></a>
+  </div>
+</div>

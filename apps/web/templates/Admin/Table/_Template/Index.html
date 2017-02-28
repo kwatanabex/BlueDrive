@@ -1,0 +1,610 @@
+<?php
+$url_tablemeta_base = $v->get('App.Admin.url_tablemeta_base');
+
+$search_form = $v->get('search_form');
+$import_form = $v->get('import_form');
+$elements = $v->get('elements');
+
+$enable_export = $v->get('enable_export');
+$enable_tmpfile = $v->get('enable_tmpfile');
+$enable_zip = $v->get('enable_zip');
+$enable_import = $v->get('enable_import');
+
+$meta_name = $v->get('meta_name');
+$url_new = $v->get('url_new');
+$url_rss = $v->get('url_rss');
+$url_feed = $v->get('url_feed');
+
+?>
+<script type="text/javascript" src="/content/js/jquery.upload.js"></script>
+<script type="text/javascript" src="/content/js/jquery.BlueDriveTableList.js"></script>
+<script type="text/javascript">
+<!--
+$.fn.BlueDriveTableList.defaults = {
+  'url': window.location.href
+};
+
+$(function() {
+  var currentSort = '';
+  var currentPage = '1';
+  var currentRow = '0';
+
+  function replacePagingCallback(page)
+  {
+    currentPage = String(page);
+    replacePage();
+  }
+
+  function replaceRowChangingCallback(row)
+  {
+    currentRow = row;
+    currentPage = '1';
+    replacePage();
+  }
+
+  function replaceSortingCallback(name, order)
+  {
+    currentPage  = '1';
+    currentSort  = name;
+    currentSort += (order == '1') ? '.DESC' : '.ASC';
+    replacePage();
+  }
+
+  function replacePage()
+  {
+    var parameters = [];
+    var form = $('#table-list-search form')[0];
+    if (form) {
+      parameters = $.BlueDriveUtil.convertFormToArray(form);
+    }
+
+    var query = [];
+    for (var i in parameters) {
+      if (parameters[i]['value'] != '') {
+        query.push(parameters[i]['name'] + '=' + encodeURIComponent(parameters[i]['value']));
+      }
+    }
+    query.push('__page=' + currentPage);
+    query.push('__sort=' + encodeURIComponent(currentSort));
+    if (currentRow != '0') {
+      query.push('__row=' + currentRow);
+    }
+
+    window.location.hash = '!' + encodeURIComponent(query.join("&"));
+  }
+
+  $(document).on('submit', '#table-list-search form', function(e) {
+    if (e.originalEvent) {
+      currentPage = '1';
+      replacePage();
+      return false;
+    }
+  });
+
+  $(document).on('click', '#table-list-search-link', function() {
+    if ($('#table-list-search').css('display') == 'none') {
+      $('#table-list-search').slideDown(100, function(){
+        $('#table-list-search-link').prev().hide(); // for ie9
+        $('#table-list-search-link').text('検索非表示');
+      });
+    } else {
+      $('#table-list-search').slideUp(100, function() {
+        $('#table-list-search-link').prev().show(); // for ie9
+        $('#table-list-search-link').text('検索表示');
+      });
+    }
+  });
+
+  $(window).hashchange(function() {
+    var hash = window.location.hash;
+    var page = '1';
+    var parameters = [];
+    if (hash && hash.match(/^#\!(.+)$/)) {
+      hash = decodeURIComponent(RegExp.$1);
+      var tmp = hash.split("&");
+      var pageExist = false;
+      for (var i in tmp) {
+        var tmp2 = tmp[i].split("=",2);
+        if (tmp2.length == 2) {
+          parameters.push({'name': decodeURIComponent(tmp2[0]), 'value': decodeURIComponent(tmp2[1])});
+          if (!pageExist && (tmp2[0] == '__page')) {
+            pageExist = true;
+          }
+        }
+      }
+
+      for (var i in parameters) {
+        if (parameters[i].value != '') {
+          var element = $('#table-list-search form [name="' + parameters[i].name + '"]');
+          if (element.length > 0) {
+            element.val(parameters[i].value);
+          }
+        }
+      }
+    }
+
+    if (!pageExist) {
+      parameters.push({'name': '__page', 'value': '1'});
+    }
+
+    $("#page-list").BlueDriveTableList({ 
+      'parameters': parameters,
+      'loadingCss': '#processing',
+      'counterCss': '.page-counter',
+      'navigationCss': '.page-navi',
+      'errorMessageCss': '#content-error-message',
+      'warnMessageCss': '#content-warn-message',
+      'pagingCallback': replacePagingCallback,
+      'rowChangingCallback': replaceRowChangingCallback,
+      'sortingCallback': replaceSortingCallback
+    });
+  });
+
+  $(window).hashchange();
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　<?php $v->out('title'); ?>
+    <?php $v->outIfExist('description', '<br /><small>%s</small>'); ?>
+    </h1>
+  </div>
+
+  <div class="panel panel-default" style="margin-bottom: 10px;">
+    <div class="panel-heading clearfix">
+      <div class="pull-left" style="padding-left: 4px;"><strong>一覧</strong></div>
+      <div class="pull-right" style="padding-right: 4px; color: #CCCCCC;">
+      <?php
+        echo '<a id="table-list-search-link" href="javascript:void(0);">検索表示</a>';
+        if ($url_new) {
+          echo sprintf('&nbsp;|&nbsp;<a href="%s">新規作成</a>', $url_new);
+        }
+        if ($enable_export) {
+          echo '&nbsp;|&nbsp;<a id="crud-link-export" href="javascript:void(0);">エクスポート</a>';
+        }
+        if ($enable_import) {
+          echo '&nbsp;|&nbsp;<a id="crud-link-import" href="javascript:void(0);">インポート</a>';
+        }
+        if ($url_rss) {
+          echo sprintf('&nbsp;|&nbsp;<a href="%s" target="_blank">RSS</a>', $url_rss);
+        }
+        if ($url_feed) {
+          echo sprintf('&nbsp;|&nbsp;<a href="%s" target="_blank">Atom</a>', $url_feed);
+        }
+        if (true) {
+          echo sprintf('&nbsp;|&nbsp;<a href="%s">メタデータ編集</a>', $url_tablemeta_base . 'edit.html?name=' . $meta_name);
+        }
+      ?>
+      </div>
+    </div>
+
+    <div id="table-list-search" class="panel-body" style="display:none;">
+      <div><span class="glyphicon glyphicon-search"></span> <strong>検索</strong></div>
+      <form method="post" role="form">
+      <table class="table bd-table-form">
+<?php
+    $cols_max = 1;
+    $cols_current = 0;
+    foreach ($search_form->getElementNames() as $name) {
+      if ($cols_current > $cols_max) {
+        while ($cols_current < $cols_max) {
+          echo '<th>&nbsp;</th><td>&nbsp;</td>';
+          $cols_current++;
+        }
+        echo '</tr>';
+        $cols_current = 0;
+      }
+      if ($cols_current == 0) {
+        echo '<tr>';
+      }
+?>
+      <th><?php echo $search_form->getDisplayName($name); ?></th>
+      <td><?php echo $search_form->getHtml($name); ?></td>
+<?php
+      $cols_current++;
+    }
+
+    while ($cols_current <= $cols_max) {
+      echo '<th>&nbsp;</th><td>&nbsp;</td>';
+      $cols_current++;
+    }
+    echo '</tr>';
+?>
+          <tr>
+            <td colspan="4" class="text-right">
+              <input type="submit" class="btn btn-primary" value="　検索　" />
+              <input type="reset" class="btn btn-default" value="リセット" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <input type="hidden" name="__type" value="export" />
+      <input type="hidden" name="__sort" value="" />
+      <input type="hidden" name="__header" value="" />
+      <input type="hidden" name="__sjis" value="" />
+      <input type="hidden" name="__tmpfile" value="" />
+      <input type="hidden" name="__zip" value="" />
+      </form>
+    </div>
+  </div>
+
+  <div id="content-error-message" class="alert alert-danger" style="display:none;">
+    <div style="margin-bottom: 4px;"><span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<strong>エラーが発生しました。下記のメッセージの内容を確認してください。</strong></div>
+    <div></div>
+  </div>
+
+  <div id="content-warn-message" class="alert alert-warning" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<span></span></div>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>
+
+  <div>
+    <div style="margin-bottom: 4px;">
+      <form role="form">
+      <div class="row page-counter form-inline" style="margin-bottom: 6px;">
+        <div class="col-xs-8" style="padding-top: 6px;"></div>
+        <div class="col-xs-4 text-right"></div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12 text-right page-navi"></div>
+      </div>
+      </form>
+    </div>
+    <div id="page-list"></div>
+    <div>
+      <div class="row">
+        <div class="col-xs-12 text-right page-navi"></div>
+      </div>
+    </div>
+  </div>
+
+<?php
+// =========================================================
+// エクスポート機能
+// =========================================================
+if ($enable_export) {
+?>
+
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#crud-link-export').colorbox({width:"580px", inline:true, href: '#dialog-export', onOpen: function() {
+    $('#dialog-export').show();
+  }, onClosed: function() {
+    $('.dialog').hide();
+  }
+  });
+
+  $('#dialog-export form input:button').click(function() {
+      var checkHeader = ($('#export-header:checked').length > 0) ? '1' : '0';
+      var checkSjis   = ($('#export-sjis:checked').length > 0) ? '1' : '0';
+      var checkTmpfile = ($('#export-tmpfile:checked').length > 0) ? '1' : '0';
+      var checkZip = ($('#export-zip:checked').length > 0) ? '1' : '0';
+
+      $('#table-list-search form').find('[name="__header"]:input').val(checkHeader);
+      $('#table-list-search form').find('[name="__sjis"]:input').val(checkSjis);
+      $('#table-list-search form').find('[name="__tmpfile"]:input').val(checkTmpfile);
+      $('#table-list-search form').find('[name="__zip"]:input').val(checkZip);
+      $('#table-list-search form').find('[name="__sort"]:input').val(currentSort);
+      $('#table-list-search form').find('[name="__page"]:input').val(currentPage);
+      $('#table-list-search form').submit();
+
+      $.colorbox.close();
+  });
+
+  $('#export-tmpfile').click(function(){
+    $('#export-zip').attr('disabled', !this.checked);
+  });
+});
+//-->
+</script>
+<!--
+<div id="dialog-export" class="dialog">
+  <form>
+  <div class="dialog-content">
+    <dl>
+      <dt>ヘッダの出力</dt>
+      <dd><input type="checkbox" id="export-header" value="1" checked /> <label for="export-header">エクスポートするファイルの行頭にヘッダを含める</label></dd>
+      <dt>文字コード</dt>
+      <dd><input type="checkbox" id="export-sjis" value="1" /> <label for="export-sjis">エクスポートするファイルの文字コードを Shift_JIS に変換する（デフォルトUTF-8）</label></dd>
+      <dt>ダウンロード方式</dt>
+      <dd>
+<?php if ($enable_tmpfile) { ?>
+      <input type="checkbox" id="export-tmpfile" value="1" /> <label for="export-tmpfile">サーバー上に一時ファイルを作成してからダウンロードする</label><br />
+<?php } else { ?>
+      <input type="checkbox" value="0" disabled="disabled" /> サーバー上に一時ファイルを作成してからダウンロードする<br />
+<span style="color: #CC0000;">※ サーバー上の一時領域にファイルが作成できません。</span><br />
+<?php } ?>
+<?php if ($enable_zip) { ?>
+      <input type="checkbox" id="export-zip" value="1" disabled="disabled" /> <label for="export-zip">ZIP 圧縮する</label>
+<?php } else { ?>
+      <input type="checkbox" value="0" disabled="disabled" /> ZIP 圧縮する
+<span style="color: #CC0000;">※ ZIP圧縮機能は使用できません。使用するには Phar を有効にしてください。</span>
+<?php } ?>
+      </dd>
+    </dl>
+  </div>
+  <div class="dialog-notice">
+  ※ CSV内容の区切り文字は「,」、囲い文字は「&quot;」です。<br />
+  ※ 出力条件は、直近の検索条件やソート条件が引き継がれます。
+  </div>
+  <div class="dialog-close">
+    <input type="button" class="button" value="エクスポート実行" />
+  </div>
+  </form>
+</div>
+-->
+<?php
+}
+// =========================================================
+?>
+
+<?php
+// =========================================================
+// インポート機能
+// =========================================================
+if ($enable_import) {
+?>
+
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#crud-link-import').colorbox({width:"580px", inline:true, href: '#dialog-import',
+    onOpen: function() {
+      $('#dialog-import .dialog-import').hide();
+      $('#dialog-import1').show();
+      $('#dialog-import').show();
+    }, onClosed: function() {
+      $('#dialog-import').hide();
+    }
+  });
+
+  $('#dialog-import a[rel^=dialog-import]').click(function() {
+    var height = $('#dialog-import1').height();
+    $('#dialog-import .dialog-import').hide();
+    var id = $(this).attr('rel');
+    $('#' + id).css('min-height', height).show();
+  });
+
+  var importing = false;
+  $('#dialog-import1 input:button').click(function() {
+    if ($('#dialog-import1 input[type=file]').val() == '') {
+      alert('ファイルが選択されていません');
+      return;
+    }
+
+    var height = $('#dialog-import1').height();
+    $('#dialog-import .dialog-import').hide();
+    $('#dialog-import3 dl dd').empty();
+    $('#dialog-import3 .dialog-content div').hide();
+    $('#dialog-import3').css('min-height', height).show();
+
+    importing = true;
+    importingMessage();
+    $('#dialog-import1 .dialog-content').upload(window.location.href, function(response) {
+      importing = false;
+
+      var errorMessages = [];
+      if (response.message) {
+        errorMessages.push(response.message);
+      }
+      if (response.messages) {
+        for (var i in response.messages) {
+          errorMessages.push(response.messages[i]);
+        }
+      }
+
+      importedMessage(errorMessages);
+    }, 'json');
+  });
+
+  function importedMessage(messages)
+  {
+    $('#dialog-import3 dl dd').empty();
+    $('#dialog-import3 dl dd').append('<span />');
+    if (messages.length == 0) {
+      $('#dialog-import3 .dialog-content div.reload').show(); // 更新リンクを表示
+      $('#dialog-import3 dl dd span').text('CSVファイルインポートが正常に完了しました。');
+      $('#dialog-import1 input[type=file]').val('');
+    } else {
+      $('#dialog-import3 .dialog-content div.back').show(); // 戻るリンクを表示
+      $('#dialog-import3 dl dd span').css({'color': '#CC0000'}).text('CSVファイルインポートでエラーが発生しました。');
+      if (messages) {
+        $('#dialog-import3 dl dd').append('<div style="padding: 10px 0;" />');
+        for (var i in messages) {
+          $('#dialog-import3 dl dd div').append('<span />');
+          $('#dialog-import3 dl dd div span:last-child').text(messages[i]);
+          $('#dialog-import3 dl dd div').append('<br />');
+        }
+        $('#dialog-import3 dl dd').append('<div style="padding: 10px 0;">※エラーは最大10件表示されます</div>');
+      }
+    }
+  }
+
+  function importingMessage()
+  {
+    if (!importing) {
+      return;
+    }
+
+    var message = 'CSVファイルインポート中 ';
+    var text = $('#dialog-import3 dl dd').text();
+    if (!text) {
+      text = message;
+    } else {
+      text = text.substr(message.length);
+      if (text.length >= 10) {
+        text = message;
+      } else {
+        text += '.';
+        text = message + text;
+      }
+    }
+    $('#dialog-import3 dl dd').text(text);
+
+    setTimeout(importingMessage, 1000);
+  }
+
+});
+
+//-->
+</script>
+<!--
+<div id="dialog-import" class="dialog">
+  <div id="dialog-import1" class="dialog-import">
+    <?php if (!ini_get('file_uploads')) { ?>
+    <div class="dialog-content">
+      <div style="color: #CC0000; padding: 4px;">
+      サーバー側の設定によりファイルアップロードができません。php.ini の file_uploads を有効にしてください。
+      </div>
+    </div>
+    <?php } else { ?>
+    <form>
+    <div class="dialog-content">
+      <dl>
+        <dt>CSVファイル</dt>
+        <dd><input type="file" name="__csvfile" size="40" style="width: 400px;" /></dd>
+        <dt>ヘッダ</dt>
+        <dd><input type="checkbox" id="import-header" name="__header" value="1" /> <label for="import-header">インポート対象カラムが記載されている行頭を含む</label></dd>
+        <dt>文字コード</dt>
+        <dd><input type="checkbox" id="import-sjis" name="__sjis" value="1" /> <label for="import-sjis">インポートファイルの文字コードが Shift_JIS（デフォルトは UTF-8）</label></dd>
+      </dl>
+      <input type="hidden" name="__type" value="import" />
+    </div>
+    <div class="dialog-notice">
+    ※ CSV内容の区切り文字は「,」、囲い文字は「&quot;」です。<br />
+    ※ CSVフォーマットは、<a href="javascript:void(0);" rel="dialog-import2"><strong>既定のフォーマット</strong></a> に合わせる必要があります。ただし、「インポート対象カラムが記載されている行頭を含む」を指定した場合は、行頭のカラムに合わせられます。<br />
+    ※ デフォルト値を使用する場合は、行頭にヘッダを含む状態で、対象カラム名を除外してください。<br />
+    ※ アップロード可能な最大サイズは、<?php echo formatPostMaxFileSize(); ?> です。変更する場合は、サーバー上の設定を変更する必要があります。<br />
+    ※ DBに反映されるタイミングは、すべての処理が終了した後です。エラーが発生した場合や、途中で処理を中断（ブラウザを閉じるなど）した場合は、反映されません。<br />
+    </div>
+    <div class="dialog-close">
+      <input type="button" value="インポート実行" class="button" />
+    </div>
+    </form>
+    <?php } ?>
+  </div>
+
+  <div id="dialog-import2" class="dialog-import" style="display:none;">
+    <div class="dialog-content">
+      <dl>
+        <dt>CSVフォーマット</dt>
+        <dd>この管理情報にデータをインポートするには、下記のフォーマットで1行<strong><?php echo count($import_form->getElementNames()); ?>項目</strong>に整えたCSVファイルが必要です。 <a href="javascript:void(0);" rel="dialog-import1">戻る</a></dd>
+      </dl>
+      <table summary="CSVフォーマット">
+        <thead>
+          <tr>
+            <th style="text-align: center">No</th>
+            <th style="text-align: center">必須</th>
+            <th style="text-align: left">項目名</th>
+            <th style="text-align: left">フォーマット</th>
+          </tr>
+        </thead>
+        <tbody>
+<?php
+    $i = 0;
+    foreach ($import_form->getElementNames() as $name) {
+?>
+          <tr>
+            <td style="text-align: center"><?php echo ++$i; ?></td>
+            <td style="text-align: center"><?php echo $import_form->isRequire($name) ? '○' : '-'; ?></td>
+            <td><?php echo $import_form->getDisplayName($name); ?></td>
+            <td><?php echo formatTypeName($elements[$name]->getFormatType()); ?></td>
+          </tr>
+<?php } ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="dialog-import3" class="dialog-import" style="display:none;">
+    <div class="dialog-content">
+      <dl>
+        <dt>CSVファイルのアップロード状況</dt>
+        <dd></dd>
+      </dl>
+      <div class="back"><a href="javascript:void(0);" rel="dialog-import1">戻る</a></div>
+      <div class="reload"><a href="javascript:window.location.reload()">画面を更新する</a></div>
+    </div>
+  </div>
+</div>
+-->
+<?php
+}
+// =========================================================
+?>
+
+<?php
+
+function formatTypeName($fotmat_type)
+{
+    switch ($fotmat_type) {
+    // 整数型
+    case 'I': return '半角数値';
+    // 浮動小数点型
+    case 'F': return '半角数値（小数可能）';
+    // 桁数固定数値型
+    case 'N': return '半角数値（小数可能）';
+    // 日付型
+    case 'D': return '日付（YYYY-MM-DD）';
+    // 日時
+    case 'DT': return '日時（YYYY-MM-DD HH:MI:SS）';
+    // 時間型
+    case 'T': return '時間（HH:MI:SS）';
+    // 文字列型（バイト）
+    case 'S': return '文字列';
+    // 文字列型（文字長）
+    case 'M': return '文字列';
+    // 未定義
+    default: return '未定義の形式';
+    }
+}
+
+
+function formatPostMaxFileSize()
+{
+    $memory_limit = ini_get('memory_limit');
+    $post_max_size = ini_get('post_max_size');
+    $upload_max_filesize = ini_get('upload_max_filesize');
+
+    if (preg_match('/(\d+)(K|M|G)/', $memory_limit, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $memory_limit = $matches[1] * 1024; break;
+        case 'M': $memory_limit = $matches[1] * 1024 * 1024; break;
+        case 'G': $memory_limit = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    if (preg_match('/(\d+)(K|M|G)/', $post_max_size, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $post_max_size = $matches[1] * 1024; break;
+        case 'M': $post_max_size = $matches[1] * 1024 * 1024; break;
+        case 'G': $post_max_size = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    if (preg_match('/(\d+)(K|M|G)/', $upload_max_filesize, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $upload_max_filesize = $matches[1] * 1024; break;
+        case 'M': $upload_max_filesize = $matches[1] * 1024 * 1024; break;
+        case 'G': $upload_max_filesize = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    $max_size = 0;
+    if ($memory_limit > $post_max_size) {
+        $max_size = $post_max_size;
+    }
+    if ($max_size > $upload_max_filesize) {
+        $max_size = $upload_max_filesize;
+    }
+
+    $max_size = round($max_size / (1024 * 1024), 1);
+    return $max_size . 'MB';
+}

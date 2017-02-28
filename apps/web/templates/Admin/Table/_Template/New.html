@@ -1,0 +1,127 @@
+<?php
+$form_types = $v->get('form_types');
+$page_descriptions = $v->get('page_descriptions');
+
+$form_type_input    = $v->get('form_type_input');
+$form_type_confirm  = $v->get('form_type_confirm');
+$form_type_complete = $v->get('form_type_complete');
+
+$forms    = $v->get('forms');
+$elements = $v->get('elements');
+?>
+<script type="text/javascript" src="/content/js/jquery.BlueDriveTableInput.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  $.BlueDriveTableInput.initialize({
+    'url': window.location.href,
+    'pageTypes': <?php echo json_encode($form_types); ?>,
+    'pageDescriptions': <?php echo json_encode($page_descriptions); ?>,
+    'formTypeInput': '<?php echo $form_type_input; ?>',
+    'formTypeConfirm': '<?php echo $form_type_confirm; ?>',
+    'formTypeComplete': '<?php echo $form_type_complete; ?>'
+  });
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　<?php $v->out('title'); ?></h1>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading clearfix">
+      <div class="pull-left" style="padding-left: 4px;"><strong>新規登録</strong></div>
+      <div class="pull-right" style="padding-right: 4px; color: #CCCCCC;">
+      <a href="<?php $v->out('url_lst'); ?>">一覧に戻る</a>&nbsp;|&nbsp;<a href="javascript:window.history.back();">直前に戻る</a>
+      </div>
+    </div>
+    <div id="content-summary" class="panel-body" style="display:none;"></div>
+  </div>
+
+  <div>
+    <p id="content-message-input" class="content-message" style="display:none;">下記項目を入力してください。</p>
+    <p id="content-message-confirm" class="content-message" style="display:none;">下記項目を確認してください。</p>
+    <div id="content-message-complete" class="content-message alert alert-success" style="display:none;"><span class="glyphicon glyphicon-ok"></span>&nbsp;&nbsp;登録が完了しました。</div>
+  </div>
+
+  <div id="content-error-message" class="alert alert-danger" style="display:none;">
+    <div style="margin-bottom: 4px;"><span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<strong>エラーが発生しました。下記のメッセージの内容を確認してください。</strong></div>
+    <div></div>
+  </div>
+
+  <div id="content-warn-message" class="alert alert-warning" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<span></span></div>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 入力値を確認しています...
+  </div>
+
+<?php
+  foreach (array_keys($form_types) as $page_id) {
+    $form = $forms[$page_id];
+    $page_input = ($form_types[$page_id] == $form_type_input);
+?>
+  <div id="page-<?php echo $page_id; ?>" class="content-body row" style="display: none;">
+    <div class="col-xs-12">
+      <form role="form">
+      <table class="table bd-table-form">
+<?php
+    $cols_max = 2;
+    $cols_current = 0;
+    foreach ($form->getElementNames() as $name) {
+      $cols = $elements[$name]->getCols();
+      if ($cols_current + $cols > $cols_max) {
+        while ($cols_current < $cols_max) {
+          echo '<th>&nbsp;</th><td>&nbsp;</td>';
+          $cols_current++;
+        }
+        echo '</tr>';
+        $cols_current = 0;
+      }
+
+      if ($cols_current == 0) {
+        echo '<tr>';
+      }
+?>
+      <th><?php
+        echo $form->getDisplayName($name);
+        $v->echoIf($page_input && $form->isRequire($name), ' <small><span class="text-danger">*</span></small>');
+      ?></th>
+      <td colspan="<?php echo ($cols * 2) - 1; ?>"><?php
+        echo $form->getHtml($name);
+        $v->echoIf($page_input && ($elements[$name]->getNote() !== null), '<br /><span class="note">' . $elements[$name]->getNote() . '</span>');
+      ?></td>
+<?php
+      $cols_current += $cols;
+    }
+
+    if ($cols_current < $cols_max) {
+      while ($cols_current < $cols_max) {
+        echo '<th>&nbsp;</th><td>&nbsp;</td>';
+        $cols_current++;
+      }
+      echo '</tr>';
+    }
+
+    echo implode('', $form->getHtmlHiddens());
+?>
+        <tr>
+          <td colspan="<?php echo ($cols_max * 2); ?>" class="buttons text-right"></td>
+        </tr>
+      </table>
+      </form>
+    </div>
+  </div>
+<?php
+  }
+?>
+
+  <p id="content-footer" style="display:none"></p>
+
+  <div class="alert alert-warning">
+  ※ ブラウザをリロードしないでください。リロードすると最初の入力画面に戻り、入力値が初期化される場合があります。
+  </div>
+

@@ -1,0 +1,327 @@
+<?php
+$url_system_base = $v->get('App.Admin.url_system_base');
+$url_table_base  = $v->get('App.Admin.url_table_base');
+$url_tablemeta_base  = $v->get('App.Admin.url_tablemeta_base');
+
+$table_name = $v->get('table_name');
+$config_list = $v->get('config_list');
+$access_list = $v->get('access_list');
+$access_class_list = $v->get('access_class_list');
+$dao_entity_list = $v->get('dao_entity_list');
+
+?>
+<?php if (count($config_list) > 0) { ?>
+<link rel="stylesheet" href="<?php $v->out('App.url_root'); ?>/content/codemirror/codemirror.css">
+<script src="<?php $v->out('App.url_root'); ?>/content/codemirror/codemirror.js"></script>
+<script src="<?php $v->out('App.url_root'); ?>/content/codemirror/xml.js"></script>
+<script src="<?php $v->out('App.url_root'); ?>/content/codemirror/javascript.js"></script>
+<script src="<?php $v->out('App.url_root'); ?>/content/codemirror/clike.js"></script>
+<script src="<?php $v->out('App.url_root'); ?>/content/codemirror/php.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+    lineNumbers: true,
+    matchBrackets: true,
+    mode: "application/x-httpd-php",
+    indentUnit: 4,
+    indentWithTabs: false,
+    enterMode: "keep",
+    gutter: false,
+    tabMode: "shift"
+  });
+
+  $('#page1 input[name=crud_check]').click(function() {
+    switch ($(this).val()) {
+    case '1':
+      $('#crud-access-select').hide();
+      $('#crud-config-select').show();
+      $('#crud-config-select select').val('');
+      break;
+    case '2':
+      $('#crud-config-select').hide();
+      $('#crud-access-select').show();
+      $('#crud-access-select select').val('');
+      break;
+    }
+
+    $('#page1-code textarea[name=code]').val('');
+    $('#page1-code').hide();
+    $('.table-edit-list-link').hide();
+  });
+
+  $('#crud-config-select select').change(function(){
+    showCode();
+  });
+
+  $('#crud-access-select select').change(function(){
+    showCode();
+  });
+
+  function showCode()
+  {
+    $('#table-edit-message').hide();
+    $('#page1-code').hide();
+    $('#page1-code textarea[name=code]').val('');
+    $('.table-edit-list-link').hide();
+
+    var type = $('#page1 input[name=crud_check]:checked').val();
+    var table = getSelectTable(type);
+    if (!table) {
+      return;
+    }
+
+    $('#code-loading').show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "mode": "read",
+        "type": type,
+        "table": table
+      },
+      dataType: "json",
+      complete: function() {
+        $('#code-loading').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+        $('#alert-message-space').show();
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          $('#alert-message-space .alert-message').html('メタデータの作成中にエラーが発生しました<br />' + result['message']);
+          $('#alert-message-space').show();
+          return;
+        }
+
+        $('.table-edit-list-link').unbind('click').click(function() {
+          window.location.href = '<?php echo $url_table_base; ?>' + table + '/';
+        }).show();
+
+        switch (type) {
+        case '1':
+          $('#crud-access-reference').hide();
+          $('#crud-config-reference').show();
+          break;
+        case '2':
+          $('#crud-config-reference').hide();
+          $('#crud-access-reference').show();
+          break;
+        }
+
+        $('#page1-code').show();
+        editor.setValue(result['code']);
+      }
+    });
+  }
+
+  function getSelectTable(type)
+  {
+    switch (type) {
+    case '1': return $('#crud-config-select select').val(); break;
+    case '2': return $('#crud-access-select select').val(); break;
+    default: return null;
+    }
+  }
+
+  $('#page1 input[name=commit]').click(function(){
+    $('#table-edit-message').hide();
+    $('#page1').hide();
+
+    var type = $('#page1 input[name=crud_check]:checked').val();
+    var table = getSelectTable(type);
+    var code = editor.getValue();
+
+    $('#processing').show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "mode": "write",
+        "type": type,
+        "table": table,
+        "code": code
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+        $('#alert-message-space').show();
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          $('#alert-message-space .alert-message').html('コード編集の反映中にエラーが発生しました<br />' + result['message']);
+          $('#alert-message-space').show();
+          $('#page1').show();
+          return;
+        }
+
+        $('#page2').show();
+      }
+    });
+  });
+
+  $('#page2 a[name=back]').click(function(){
+    window.location.reload();
+  });
+
+  // 初期化
+  $('#crud-config-check').prop('checked', true);
+  <?php if ($table_name) { ?>
+    $('#crud-config-select select').val('<?php echo $table_name; ?>');
+    $('#crud-config-select select').trigger('change');
+  <?php } else { ?>
+    $('#crud-config-select select').val('');
+  <?php } ?>
+});
+//-->
+</script>
+<?php } ?>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　メタデータの編集<br /><small>メタデータ編集は、テーブルメタデータの情報を直接編集します。</small></h1>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 処理しています…
+  </div>
+
+<?php if (count($config_list) > 0) { ?>
+  <div id="page1">
+    <form role="form">
+    <div id="crud-config-select">
+      <table class="bd-table-form">
+        <tr>
+          <th>CRUDメタデータ</th>
+          <td colspan="2">
+          <label class="radio-inline">
+            <input type="radio" id="crud-config-check" name="crud_check" value="1" checked /> CRUD設定メタデータ
+          </label>
+          <label class="radio-inline">
+            <input type="radio" id="crud-access-check" name="crud_check" value="2" /> CRUDアクセスメタデータ
+          </label>
+          </td>
+        </tr>
+        <tr>
+          <th>CRUD設定メタデータ</th>
+          <td>
+<select class="form-control">
+<option value="">メタデータを選択してください</option>
+<?php
+foreach ($config_list as $name) {
+  $v->echoFormat('<option value="%s">%s</option>', array($name, $name));
+}
+?>
+</select>
+          </td>
+          <td><a class="table-edit-list-link" href="javascript:void(0);" style="display:none;">一覧を表示</a></td>
+        </tr>
+      </table>
+    </div>
+
+ 
+    <div id="crud-access-select" style="display:none;" class="row">
+      <div class="col-xs-2">
+        <strong>CRUDアクセスメタデータ</strong>
+      </div>
+      <div class="col-xs-8">
+<select class="form-control">
+<option value="">メタデータを選択してください</option>
+<?php
+foreach ($access_list as $name) {
+  $v->echoFormat('<option value="%s">%s</option>', array($name, $name));
+}
+?>
+</select>
+      </div>
+      <div class="col-xs-2">
+        <a class="table-edit-list-link" href="javascript:void(0);" style="display:none;">一覧を表示</a>
+      </div>
+    </div>
+
+    <div id="page1-code" style="display:none;margin-top:10px;">
+      <div>
+        <textarea id="code" name="code" class="form-control"></textarea>
+        <input type="button" name="commit" class="btn btn-primary" value="　編集を確定する　" />
+      </div>
+
+      <div id="crud-config-reference" class="panel panel-default" style="margin-top: 20px;">
+        <div class="panel-heading">
+          ※ 参考情報）使用可能なアクセスクラス
+        </div>
+        <div class="panel-body">
+<?php
+foreach ($access_class_list as $name) {
+  $v->echoFormat('<div>%s</div>', array($name));
+}
+?>
+        </div>
+      </div>
+
+      <div id="crud-access-reference" class="panel panel-default" style="margin-top: 20px;">
+        <div class="panel-heading">
+        （参考情報）使用可能なDAOエンティティクラス
+        </div>
+        <div class="panel-body">
+<?php
+foreach ($dao_entity_list as $name) {
+  $v->echoFormat('<div>%s</div>', array($name));
+}
+?>
+        </div>
+      </div>
+
+    </div>
+    </form>
+  </div>
+
+  <div id="code-loading" class="well" style="display:none; margin-top: 10px;">
+    <span class="glyphicon glyphicon-time"></span> コードを取得しています...
+  </div>
+
+  <div id="page2" class="content-body" style="display:none;">
+    <div class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle"></span> メタデータの編集が完了しました。
+    </div>
+    <div style="margin-top: 20px;">
+      <a name="back" href="javascript:void(0);">戻る</a>
+    </div>
+    <div style="margin-top: 10px;">
+      <a class="table-edit-list-link" href="javascript:void(0);">⇒ 一覧を表示</a>
+    </div>
+  </div>
+
+<?php } else { ?>
+  <div class="alert alert-warning">
+    <span class="glyphicon glyphicon-warning-sign"></span> メタデータが作成されていません。
+  </div>
+<?php } ?>
+
+

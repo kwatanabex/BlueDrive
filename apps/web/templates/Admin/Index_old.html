@@ -1,0 +1,53 @@
+
+TOPページ
+
+<link rel="stylesheet" type="text/css" charset="utf-8" href="/js/jquery/jquery.BlueDriveDialog.css" />
+<script type="text/javascript" src="/js/jquery/jquery.BlueDriveDialog.js"></script>
+
+<style type="text/css">
+#dialog-test1, #dialog-test2 {
+display: none;
+background-color: #FFFFFF;
+}
+</style>
+
+<script type="text/javascript">
+$(function(){
+
+$('#start-dialog').click(function() {
+  $("#dialog-test1").BlueDriveDialog({
+    'closeCallback': function(element, defaultClose) {
+      if (defaultClose) {
+        return true;
+      }
+
+      return true;
+    }
+  });
+});
+
+});
+
+</script>
+
+<div id="dialog-test1" class="dialog" dialogTitle="ダイアログテスト1">
+
+<?php include_once SYL_APP_DIR . '/templates/_App/Fm.html'; ?>
+
+</div>
+
+<div id="dialog-test2" class="dialog" dialogTitle="ダイアログテスト2">
+  <form>
+  <div class="dialog-content">
+    ダイアログテストダイアログテストダイアログテストダイアログテスト2
+  </div>
+  <div class="dialog-close">
+    <input type="button" class="button close" value="終了" />
+  </div>
+  </form>
+</div>
+
+
+<form>
+  <input id="start-dialog" type="button" value="ダイアログ表示" />
+</form>

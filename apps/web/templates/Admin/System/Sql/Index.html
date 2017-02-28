@@ -1,0 +1,119 @@
+<?php
+$url_tablemeta_base  = $v->get('App.Admin.url_tablemeta_base');
+$current_database = $v->get('current_database');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+
+  function getList(page)
+  {
+    $('.content-alert').hide();
+    $('#list').empty();
+    $('.page-info div').empty();
+
+    var sql = $('form textarea[name=sql]').val();
+    if (!sql) {
+      $('.content-alert').text('SQLを入力してください').show();
+      return;
+    }
+
+    $('.content-loading').show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'sql': sql
+      },
+      dataType: 'json',
+      error: function() {
+        alert("システムエラーが発生しました");
+      },
+      complete: function () {
+        $('.content-loading').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'], result['page_info'])
+        } else {
+          alert("システムエラーが発生しました");
+        }
+      }
+    });
+  }
+
+  function displayList(rows, page)
+  {
+    var listId = '#list';
+
+    if (rows.length == 0) {
+      $('.content-alert').text('データが見つかりませんでした。').show();
+      return;
+    }
+  
+  
+  
+  }
+
+  $('#page1 form').submit(function() {
+    getList(1);
+    return false;
+  });
+  
+  $('#page1 form input[type="button"]').click(function() {
+    if ($('#page1 form table tr').eq(1).css('display') == 'none') {
+      $('#page1 form input[type="button"]').val(' 非表示 ');
+      $('#page1 form table tr').eq(1).show();
+    } else {
+      $('#page1 form input[type="button"]').val('　表示　');
+      $('#page1 form table tr').eq(1).hide();
+    }
+  });
+});
+
+//-->
+</script>
+
+  <div id="content-title">
+    <h1>SQL実行</h1>
+  </div>
+
+  <div id="content-summary">
+    SQL文を直接DBに実行します。
+  </div>
+
+  <div class="content-alert" style="display:none;"></div>
+
+  <div id="page1" class="content-body">
+    <form>
+      <table>
+        <tr>
+          <th style="width: 160px">選択中のデータベース</th>
+          <td><a href="<?php echo $url_tablemeta_base; ?>database.html"><?php echo $current_database; ?></a></td>
+        </tr>
+        <tr>
+          <td colspan="2"><textarea name="sql" rows="10"></textarea></td>
+        </tr>
+        <tr>
+          <td colspan="2" class="buttons">
+          <input type="button" class="button" value=" 非表示 " />
+          <input type="submit" class="button" value="　検索　" /></td>
+        </tr>
+      </table>
+    </form>
+  </div>
+
+  <div class="content-body">
+    <div class="page-info clearfix">
+      <div class="page-counter left"></div>
+      <div class="page-navi right"></div>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <div class="content-loading" style="display:none">
+    SQLを実行しています...
+  </div>
+

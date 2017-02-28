@@ -1,0 +1,245 @@
+<script type="text/javascript">
+<!--
+$(function() {
+  var current = 1;
+  var max = 0;
+  
+  function getList(page)
+  {
+    $('#alert-message-space').hide();
+    $('#list').empty();
+    $('.page-info div').empty();
+    $('#processing').show();
+
+    current = parseInt(page, 10);
+
+    var realm_name = $('form input[name=realm_name]').val();
+    var realm = $('form input[name=realm]').val();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'list',
+        'realm_name': realm_name,
+        'realm': realm,
+        'page': page
+      },
+      dataType: "json",
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      complete: function () {
+        $('#processing').hide();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          displayList(result['rows'], result['page_info'])
+        } else {
+          showAlertMessage('検索中にエラーが発生しました<br />' + result['message']);
+        }
+      }
+    });
+  }
+
+  function displayList(rows, page)
+  {
+    if (rows.length == 0) {
+      showAlertMessage('データが見つかりませんでした。');
+      return;
+    }
+
+    var row_count = parseInt(page['row_count'], 10);
+    var row_max = parseInt(page['row_max'], 10);
+
+    var row_start = row_count * (current - 1) + 1;
+    var row_end = row_count * current;
+    if (row_end > row_max) {
+        row_end = row_max;
+    }
+    $('.page-info div:eq(0)').append('<span>全 ' + String(row_max) + ' 件<br />' + String(row_start) + ' 件目 ～ ' + String(row_end) + ' 件目を表示しています</span>');
+
+    var start = parseInt(page['range'][0], 10);
+    var end = parseInt(page['range'][1], 10);
+
+    max = parseInt(page['page_max'], 10);
+
+    $('.page-info div:eq(1)').append('<ul class="pagination bd-ul" />');
+    if (current > 1) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="prev">&#171;</a></li>');
+    }
+    if (start > 2) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">1</a></li>');
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+    }
+    for (var i=start; i<=end; i++) {
+      if (i == current) {
+        $('.page-info div:eq(1) ul').append('<li><span class="current">' + String(i) + '</span></li>');
+      } else {
+        $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(i) + '</a></li>');
+      }
+    }
+    if (end + 1 < max) {
+      $('.page-info div:eq(1) ul').append('<li><span>..</span></li>');
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="page">' + String(max) + '</a></li>');
+    }
+    if (current < max) {
+      $('.page-info div:eq(1) ul').append('<li><a href="javascript:void(0);" class="next">&#187;</a></li>');
+    }
+
+    var listId = '#list';
+    $(listId).append('<table class="table table-bordered bd-table-list"><thead /><tbody /></table>');
+
+    $(listId + ' table thead').append('<tr />');
+    $(listId + ' table thead tr').append('<th style="width: 80px;">ID</th>');
+    $(listId + ' table thead tr').append('<th>範囲名</th>');
+    $(listId + ' table thead tr').append('<th>アクセス範囲</th>');
+    $(listId + ' table thead tr').append('<th style="width: 60px;" class="text-center">状態</th>');
+    $(listId + ' table thead tr').append('<th style="width: 100px;"></th>');
+
+    for (var i in rows) {
+      var row_class = '';
+      if (rows[i]['VALID_FLAG'] == '1') {
+        state_name = '有効';
+      } else {
+        state_name = '無効';
+        row_class = 'active';
+      }
+
+      $(listId + ' table tbody').append('<tr class="' + row_class + '" />');
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM_ID']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM_NAME']);
+      $(listId + ' table tbody tr:last').append('<td></td>');
+      $(listId + ' table tbody tr:last td:last').text(rows[i]['REALM']);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"></td>');
+      $(listId + ' table tbody tr:last td:last').text(state_name);
+      $(listId + ' table tbody tr:last').append('<td class="text-center"><input type="button" name="edit" class="btn btn-default" value="編集" /></td>');
+    }
+  }
+
+  function showAlertMessage(message)
+  {
+    $('#alert-message-space .alert-message').html(message);
+    $('#alert-message-space').show();
+  }
+
+  $('#page1 form[name="inputForm"]').submit(function() {
+    getList(1);
+    return false;
+  });
+
+  $(document).on('click', '.page-header form[name="operationForm"] input[name="new"]', function() {
+    window.location.href = 'new.html';
+  });
+
+  $(document).on('click', '#page1 form[name="listForm"] input[name="edit"]', function() {
+    var id = $(this).closest('tr').children('td:first').text();
+    window.location.href = 'edit.html?id=' + id;
+  });
+
+  function replacePagingCallback(page)
+  {
+    window.location.hash = 'page' + page;
+  }
+
+  $(window).hashchange(function() {
+    var hash = window.location.hash;
+    var page = '1';
+    if (hash && hash.match(/^#page(\d+)$/)) {
+      if (RegExp.$1 > 0) {
+        page = RegExp.$1;
+      }
+    }
+
+    getList(page);
+  });
+
+  // ページングイベント
+  $(document).on('click', '.page-info div:eq(1) ul li a.prev', function(e) {
+    replacePagingCallback(current-1);
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.page', function(e) {
+    replacePagingCallback($(this).text());
+  });
+  $(document).on('click', '.page-info div:eq(1) ul li a.next', function(e) {
+    replacePagingCallback(current+1);
+  });
+
+  $(window).hashchange();
+  
+  function replaceNewline(value)
+  {
+    if (value) {
+      return value.replace(/(\r\n|\r|\n)/g,'<br />');
+    } else {
+      return value;
+    }
+  }
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <div class="row">
+      <div class="col-xs-9">
+      <h1><span class="glyphicon glyphicon-book"></span>　アクセス範囲管理<br /><small>BlueDriveを利用するユーザーが、アクセスするURLの範囲を管理します。</small></h1>
+      </div>
+      <div class="col-xs-3 text-right" style="padding-top: 30px;">
+        <form name="operationForm" method="post" role="form">
+        <input type="button" name="new" class="btn btn-default" value="　新規登録　" />
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="page1">
+    <div>
+      <form name="inputForm" method="post" role="form">
+      <div><span class="glyphicon glyphicon-search"></span> <strong>検索</strong></div>
+      <table class="table bd-table-form">
+        <tr>
+          <th style="width: 60px">範囲名</th>
+          <td><input type="text" name="realm_name" class="form-control" value="" /></td>
+          <th style="width: 100px">アクセス範囲</th>
+          <td><input type="text" name="realm" class="form-control" value="" /></td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <input type="submit" class="btn btn-primary" value="　検索　" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div>
+      <form name="listForm" method="post" role="form">
+      <div class="row page-info" style="margin-bottom: 4px;">
+        <div class="col-xs-4"></div>
+        <div class="col-xs-8 text-right"></div>
+      </div>
+      <div id="list"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>
+

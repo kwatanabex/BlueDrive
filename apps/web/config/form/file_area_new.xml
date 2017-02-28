@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<syl-form name="newGroupForm">
+  <element type="text" name="file_area_name" display="保存領域名">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="placeholder">保存領域名を入力してください</attribute>
+    </attributes>
+    <validators>
+      <validator name="require" message="{$name}が入力されていません" />
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">50</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="select" name="storage_type" display="ストレージタイプ">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <options></options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+      <validator name="numeric" message="{$name}が正しくありません">
+        <option name="min">1</option>
+      </validator>
+    </validators>
+    <default></default>
+  </element>
+  <element type="text" name="root_directory" display="ルートディレクトリ">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="placeholder">ルートディレクトリを入力してください</attribute>
+    </attributes>
+    <validators>
+      <validator name="require" message="{$name}が入力されていません" />
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="text" name="root_url" display="ルートURL">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="placeholder">ルートURLを入力してください</attribute>
+    </attributes>
+    <validators>
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="text" name="connection_string" display="接続文字列">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="placeholder">接続文字列を入力してください</attribute>
+    </attributes>
+    <validators>
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="radio" name="valid_flag" display="状態">
+    <options>
+      <option name="有効">1</option>
+      <option name="無効">0</option>
+    </options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+    </validators>
+    <default>1</default>
+  </element>
+</syl-form>

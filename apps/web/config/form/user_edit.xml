@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<syl-form name="editUserForm">
+  <element type="text" name="user_name" display="ユーザー名">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <validators>
+      <validator name="require" message="{$name}が入力されていません" />
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">50</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="text" name="email" display="メールアドレス">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <validators>
+      <validator name="byte" message="{$name}は{$max}バイト以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+      <validator name="email" message="{$name}の形式が正しくありません" />
+   </validators>
+  </element>
+  <element type="radio" name="admin_flag" display="ユーザー">
+    <options>
+      <option name="管理者ユーザー">1</option>
+      <option name="通常ユーザー">0</option>
+    </options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+      <validator name="regex" message="{$name}が正しくありません">
+        <option name="format">/^[01]$/</option>
+      </validator>
+    </validators>
+    <default>0</default>
+  </element>
+  <element type="select" name="group_id" display="グループ">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+    </attributes>
+    <options></options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+      <validator name="numeric" message="{$name}が正しくありません">
+        <option name="min">1</option>
+      </validator>
+    </validators>
+    <default>1</default>
+  </element>
+  <element type="radio" name="valid_flag" display="状態">
+    <options>
+      <option name="有効">1</option>
+      <option name="無効">0</option>
+    </options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+      <validator name="regex" message="{$name}が正しくありません">
+        <option name="format">/^[01]$/</option>
+      </validator>
+    </validators>
+    <default>1</default>
+  </element>
+  <element type="hidden" name="user_id" display="ユーザーID">
+    <validators>
+      <validator name="require" message="{$name}が設定されていません" />
+      <validator name="numeric" message="{$name}が正しくありません">
+        <option name="min">1</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="hidden" name="i_date" display="登録日付" />
+  <element type="hidden" name="u_date" display="更新日付" />
+</syl-form>

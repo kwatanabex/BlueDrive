@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  アプリケーション定数設定ファイル（defines.xml）
+
+  アプリケーション内で使用する設定値を定義する。
+  プロジェクト内の全アプリケーションの設定を変更する場合は、プロジェクト内の
+SYL_PROJECT_DIR /config/defines.xml を編集する。
+  プロジェクトとアプリケーションの設定名が同一の場合、アプリケーション内の設定が
+有効となる。
+  その他は、プロジェクト定数設定ファイルと同様。
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/defines.html
+-->
+<syl-defines xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-defines.xsd">
+</syl-defines>

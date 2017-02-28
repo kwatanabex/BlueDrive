@@ -1,0 +1,158 @@
+<?php
+$form = $v->get('form');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var file_area_name = $('form input[name=file_area_name]').val();
+    var storage_type = $('form select[name=storage_type]').val();
+    var root_directory = $('form input[name=root_directory]').val();
+    var root_url = $('form input[name=root_url]').val();
+    var connection_string = $('form input[name=connection_string]').val();
+    var valid_flag = $('form input[name=valid_flag]:checked').val();
+
+    if (file_area_name == '') {
+      showAlertMessage('保存領域名が入力されていません');
+      return false;
+    }
+
+    if (storage_type == '') {
+      showAlertMessage('ストレージタイプが選択されていません');
+      return false;
+    }
+
+    if (root_directory == '') {
+      showAlertMessage('ルートディレクトリが入力されていません');
+      return false;
+    }
+
+    if ((valid_flag != '0') && (valid_flag != '1')) {
+      showAlertMessage('状態が選択されていません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "file_area_name": file_area_name,
+        "storage_type": storage_type,
+        "root_directory": root_directory,
+        "root_url": root_url,
+        'connection_string': connection_string,
+        "valid_flag": valid_flag
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　ファイル保存領域管理 ／ 新規登録<br />
+  <small>サーバー上にあるファイルの保存領域の定義を登録します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;"></div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <form method="post" role="form">
+    <div class="form-group">
+      <label for="form1_file_area_name"><?php echo $form->getDisplayName('file_area_name'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('file_area_name'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_storage_type"><?php echo $form->getDisplayName('storage_type'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('storage_type'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_root_directory"><?php echo $form->getDisplayName('root_directory'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('root_directory'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_root_url"><?php echo $form->getDisplayName('root_url'); ?></label><br />
+      <?php echo $form->getHtml('root_url'); ?>
+      <div><small>※ 「保存領域のルートディレクトリ」の物理領域に対応するURL。WEB上に公開していないディレクトリであれば未入力。</small></div>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_connection_string"><?php echo $form->getDisplayName('connection_string'); ?></label><br />
+      <?php echo $form->getHtml('connection_string'); ?>
+      <div><small>※ ストレージタイプにより、必要な場合は入力してください。</small></div>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_valid_flag"><?php echo $form->getDisplayName('valid_flag'); ?>&nbsp;<span class="label label-danger">必須</span></label>
+      <div class="radio" style="margin-top: 0;">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_1" value="1" checked="checked" /> 有効</label>
+      </div>
+      <div class="radio">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_0" value="0" /> 無効</label>
+      </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">　登録　</button>
+  </form>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> ファイル保存領域の登録が完了しました。
+  </div>
+  <div style="margin-top: 20px;">
+    <a href="./"><strong>一覧画面へ</strong></a>
+  </div>
+</div>
+

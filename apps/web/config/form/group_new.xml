@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<syl-form name="newGroupForm">
+  <element type="text" name="group_name" display="グループ名">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="placeholder">グループ名を入力してください</attribute>
+    </attributes>
+    <validators>
+      <validator name="require" message="{$name}が入力されていません" />
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">50</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="textarea" name="description" display="説明">
+    <attributes>
+      <attribute name="class">form-control</attribute>
+      <attribute name="rows">3</attribute>
+    </attributes>
+    <validators>
+      <validator name="multibyte" message="{$name}は{$max}文字以内で入力してください">
+        <option name="max">200</option>
+      </validator>
+   </validators>
+  </element>
+  <element type="radio" name="valid_flag" display="状態">
+    <options>
+      <option name="有効">1</option>
+      <option name="無効">0</option>
+    </options>
+    <validators>
+      <validator name="require" message="{$name}が選択されていません" />
+    </validators>
+    <default>1</default>
+  </element>
+</syl-form>

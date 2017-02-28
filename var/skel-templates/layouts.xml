@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  レイアウト設定ファイル（layouts.xml）
+
+  アプリケーション内で使用するレイアウト設定を行う。
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/layouts.html
+-->
+<syl-layouts xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-layouts.xsd">
+</syl-layouts>

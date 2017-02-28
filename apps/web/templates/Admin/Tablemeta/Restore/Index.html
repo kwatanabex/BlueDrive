@@ -1,0 +1,148 @@
+<?php
+$metadata_dir = $v->get('metadata_dir');
+$enable_compress = $v->get('enable_compress');
+
+$error_message = '';
+if (!ini_get('file_uploads')) {
+    $error_message = 'サーバー側の設定によりファイルアップロードができません。php.ini の file_uploads を有効にしてください。';
+} else if (!$enable_compress) {
+    $error_message = '一時領域の保存、または圧縮アーカイブ機能が使用できません。Phar を有効にしてください。';
+}
+?>
+<script type="text/javascript" src="<?php $v->out('App.url_root'); ?>/content/js/jquery.upload.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 input[name=restoreok]').click(function() {
+    $('#alert-message-space').hide();
+
+    if ($('#page1 input[type=file]').val() == '') {
+      $('#alert-message-space .alert-message').text('リストアファイルが選択されていません');
+      $('#alert-message-space').show();
+      return;
+    }
+
+    $('#page1').hide();
+    $('#processing').show();
+
+    $('#post-form').upload(window.location.href, function(response) {
+      $('#processing').hide();
+
+      if (response.valid) {
+        $('#page2').show();
+      } else {
+        if (response.messages) {
+          $('#alert-message-space .alert-message').html(response.messages.join('<br />'));
+          $('#alert-message-space').show();
+        }
+        $('#page1').show();
+      }
+    }, 'json');
+  });
+
+  $('#page2 a[name=prev]').click(function() {
+    $("#page2").hide();
+    $("#page1").show();
+  });
+});
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　メタデータのリストア<br /><small>メタデータのリストアは、ローカル環境上にバックアップしたメタデータをサーバー上に復元します。</small></h1>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 処理しています…
+  </div>
+
+<?php if (!$error_message) { ?>
+  <div id="page1">
+    <form method="post" role="form">
+    <div>
+      <table class="bd-table-form">
+        <tr>
+          <th>リストアファイル</th>
+          <td>
+            <input type="file" name="restore_file" size="40" style="width: 400px;" />
+            <input type="hidden" name="type" value="restore" />
+          </td>
+        </tr>
+        <tr>
+          <th>リストアディレクトリ</th>
+          <td><?php echo $metadata_dir; ?></td>
+        </tr>
+      </table>
+    </div>
+    
+    <div style="margin-top: 10px;">
+      <input type="button" name="restoreok" class="btn btn-primary" value="リストアを実行する" />
+    </div>
+
+    <div class="alert alert-warning" style="margin-top: 20px;">
+      <div><span class="glyphicon glyphicon-warning-sign"></span> サーバー上に既存のファイルがある場合は上書きされます。</div>
+      <div><span class="glyphicon glyphicon-warning-sign"></span> アップロード可能なファイルの最大サイズは現在 <?php echo formatPostMaxFileSize(); ?> です。変更する場合は、サーバー上の設定を変更する必要があります。</div>
+    </div>
+    </form>
+  </div>
+
+  <div id="page2" style="display:none;">
+    <div class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle"></span> リストアが完了しました。
+    </div>
+    <div>
+      <a name="prev" href="javascript:void(0);">戻る</a>
+    </div>
+  </div>
+  
+<?php } else { ?>
+  <div class="alert alert-warning">
+    <span class="glyphicon glyphicon-warning-sign"></span> <?php echo $error_message; ?>
+  </div>
+<?php }
+
+function formatPostMaxFileSize()
+{
+    $memory_limit = ini_get('memory_limit');
+    $post_max_size = ini_get('post_max_size');
+    $upload_max_filesize = ini_get('upload_max_filesize');
+
+    if (preg_match('/(\d+)(K|M|G)/', $memory_limit, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $memory_limit = $matches[1] * 1024; break;
+        case 'M': $memory_limit = $matches[1] * 1024 * 1024; break;
+        case 'G': $memory_limit = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    if (preg_match('/(\d+)(K|M|G)/', $post_max_size, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $post_max_size = $matches[1] * 1024; break;
+        case 'M': $post_max_size = $matches[1] * 1024 * 1024; break;
+        case 'G': $post_max_size = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    if (preg_match('/(\d+)(K|M|G)/', $upload_max_filesize, $matches)) {
+        switch ($matches[2]) {
+        case 'K': $upload_max_filesize = $matches[1] * 1024; break;
+        case 'M': $upload_max_filesize = $matches[1] * 1024 * 1024; break;
+        case 'G': $upload_max_filesize = $matches[1] * 1024 * 1024 * 1024; break;
+        }
+    }
+
+    $max_size = 0;
+    if ($memory_limit > $post_max_size) {
+        $max_size = $post_max_size;
+    }
+    if ($max_size > $upload_max_filesize) {
+        $max_size = $upload_max_filesize;
+    }
+
+    $max_size = round($max_size / (1024 * 1024), 1);
+    return $max_size . 'MB';
+}

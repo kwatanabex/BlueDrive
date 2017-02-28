@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE9" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link href="<?php echo $url_root; ?>/content/bootstrap.3.0.3/css/bootstrap.min.css" rel="stylesheet" />
+<link href="<?php echo $url_root; ?>/content/css/base.css" rel="stylesheet" />
+<title>認証・認可エラー - BlueDrive</title>
+<script type="text/javascript" src="<?php echo $url_root; ?>/content/js/jquery-2.0.3.min.js"></script>
+<script src="<?php echo $url_root; ?>/content/bootstrap.3.0.3/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+  <header class="navbar navbar-inverse navbar-fixed-top bd-nav" role="navigation">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="<?php echo $url_base; ?>">BlueDrive</a>
+    </div>
+    <?php if ($user) { ?>
+    <ul class="nav navbar-nav">
+      <li><a href="#">サイト管理</a></li>
+      <?php if ($url_file_base) { ?>
+      <li class="<?php echo ($main_menu_name == 'file') ? 'active' : ''; ?>"><a href="<?php echo $url_file_base; ?>">ファイル管理</a></li>
+      <?php } ?>
+      <?php if ($url_table_base) { ?>
+      <li class="<?php echo ($main_menu_name == 'table') ? 'active' : ''; ?>"><a href="<?php echo $url_table_base; ?>">テーブル管理</a></li>
+      <?php } ?>
+      <?php if ($url_tablemeta_base) { ?>
+      <li class="<?php echo ($main_menu_name == 'tablemeta') ? 'active' : ''; ?>"><a href="<?php echo $url_tablemeta_base; ?>">テーブルメタ管理</a></li>
+      <?php } ?>
+      <?php if ($url_system_base) { ?>
+      <li class="<?php echo ($main_menu_name == 'system') ? 'active' : ''; ?>"><a href="<?php echo $url_system_base; ?>">システム管理</a></li>
+      <?php } ?>
+    </ul>
+    <div class="navbar-collapse collapse">
+      <div style="margin-right: 15px;">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <?php echo $user->getName(); ?>さん <b class="caret"></b></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="<?php echo $url_user_base; ?>edit/">ユーザー情報変更</a></li>
+              <li><a href="<?php echo $url_user_base; ?>password/">パスワード変更</a></li>
+              <li class="divider"></li>
+              <li><a href="<?php echo $url_base; ?>logout.html"><span class="glyphicon glyphicon-log-out"></span> ログアウト</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <?php }  ?>
+  </header>
+
+  <div id="container">
+    <ol class="breadcrumb">
+      <li class="active"></li>
+    </ol>
+    <?php if ($user) { ?>
+    <div class="page-header">
+      <h1><span class="glyphicon glyphicon-info-sign"></span>　認可エラーが発生しました</h1>
+    </div>
+
+    <p>アクセスされたURLは認可されていません。</p>
+    <div style="padding-top: 10px;">
+      <form method="post" role="form">
+        <button type="button" class="btn btn-default" onclick="window.history.back();">
+          <span class="glyphicon glyphicon-step-backward"></span>　前に戻る　
+        </button>
+      </form>
+    </div>
+
+    <?php } else { ?>
+    <div class="page-header">
+      <h1><span class="glyphicon glyphicon-info-sign"></span>　認証エラーが発生しました</h1>
+    </div>
+
+    <p>セッションがタイムアウトしたか、URLに直接アクセスされました。<br />再度ログイン画面からログインしてください。</p>
+    <div style="padding-top: 10px;">
+      <form action="<?php echo $url_base; ?>login.html" method="get" role="form">
+        <button type="submit" class="btn btn-default">
+          <span class="glyphicon glyphicon-log-in"></span>　ログイン画面へ
+        </button>
+      </form>
+    </div>
+    <?php } ?>
+
+  </div> 
+
+  <footer>
+    Copyright (c) k.watanabe All rights reserved.
+  </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,246 @@
+<?php
+$tables = $v->get('tables');
+?>
+<script type="text/javascript">
+<!--
+
+$(function() {
+  $('#page1 select[name=table]').change(function(){
+    var table = this.options[this.selectedIndex].value;
+    if (table == "") {
+     $('#metadata').hide();
+      return;
+    }
+
+    var name = table.substr(0,1).toUpperCase() + table.substr(1);
+    $('#metadata-dao-config-class').text(name);
+    $('#metadata-dao-access-class').text(name);
+
+    $('#metadata-crud-config-name').text(name);
+    $('#metadata-crud-access-name').text(name);
+
+    $('#page1 input[name=crud_name]').val(name);
+    $('#page1 input[name=crud_create]').prop('checked', true);
+
+    $('#metadata').show();
+    $('#metadata-crud').show();
+  });
+
+  $('#page1 input[name=crud_create]').click(function(){
+    if (this.checked) {
+      $('#metadata-crud').show();
+    } else {
+      $('#metadata-crud').hide();
+    }
+  });
+
+  $('#page1 input[name=crud_name]').keyup(function(){
+    var name = this.value;
+    $('#metadata-crud-config-name').text(name);
+    $('#metadata-crud-access-name').text(name);
+  });
+  
+  $('#page1 input[name=create]').click(function(){
+    $('#alert-message-space').hide();
+
+    var form = this.form;
+    var tableName = form.table.options[form.table.selectedIndex].value;
+    var crudCreate = form.crud_create.checked ? "1" : "0";
+    var crudName = form.crud_name.value;
+
+    if (tableName == "") {
+      $('#alert-message-space .alert-message').text('テーブルを選択してください');
+      $('#alert-message-space').show();
+      return;
+    }
+
+    if (crudCreate == "1") {
+      if (crudName == "") {
+        $('#alert-message-space .alert-message').text('CRUD名を入力してください');
+        $('#alert-message-space').show();
+        return;
+      }
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "table": tableName,
+        "crud_create": crudCreate,
+        "crud_name": crudName
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+        $('#alert-message-space').show();
+      },
+      success: function(result)
+      {
+        if (!result['valid']) {
+          $('#alert-message-space .alert-message').html('メタデータの作成中にエラーが発生しました<br />' + result['message']);
+          $('#alert-message-space').show();
+          $("#page1").show();
+          return;
+        }
+
+        $("#page2").show();
+
+        var message = '';
+        if (result['dao']) {
+          //message = result['dao'].replace(/(\r|\n|\r\n)/g, '<br />');
+          $('#dao-result pre').text(result['dao']);
+          $('#dao-result').show();
+        }
+
+        if (crudCreate == "1") {
+          if (result['crud']) {
+            //message = result['crud'].replace(/(\r|\n|\r\n)/g, '<br />');
+            $('#crud-result pre').text(result['crud']);
+            $('#crud-result').show();
+          }
+        }
+      }
+    });
+  });
+});
+
+function prevInput()
+{
+  $("#page2").hide();
+  $('#page1 select[name=table]').val('').change();
+  $("#page1").show();
+}
+
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　メタデータの作成<br /><small>メタデータ作成は、テーブル管理でテーブル内のデータを閲覧したり登録したりするために必要な構成情報を作成します。</small></h1>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 処理しています…
+  </div>
+
+<?php if (count($tables) > 0) { ?>
+
+  <div id="page1">
+    <form role="form">
+    <div style="margin-bottom: 20px;">
+      <div class="form-group">
+        <label>テーブル名</label>
+<select name="table" class="form-control">
+<option value="">テーブルを選択してください</option>
+<?php
+    foreach ($tables as $table) {
+        $v->echoFormat('<option value="%s">%s</option>', array($table['name'], $table['name']));
+    }
+?>
+</select>
+      </div>
+
+      <div>
+        <label>メタデータ作成ディレクトリ</label>
+        <p><?php $v->out('root_dir'); ?></p>
+      </div>
+    </div>
+
+    <div id="metadata" style="display:none;">
+      <div class="panel panel-default" style="margin-bottom: 20px;">
+        <div class="panel-heading">DAOファイル</div>
+        <div class="panel-body">
+          <div>
+            <label>DAOエンティティファイル</label>
+            <p>(メタデータ作成ディレクトリ)/Dao/Entity/<span id="metadata-dao-config-class"></span>.php</p>
+          </div>
+          <div>
+            <label>DAOアクセスファイル</label>
+            <p>(メタデータ作成ディレクトリ)/Dao/Access/<span id="metadata-dao-access-class"></span>.php</p>
+          </div>
+          <div class="alert alert-warning">
+            <span class="glyphicon glyphicon-warning-sign"></span> DAOファイルは、既存ファイルが存在する場合でも常に上書きされます。
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>
+          <input type="checkbox" name="crud_create" value="1" /> CRUDファイルも作成する
+        </label>
+      </div>
+
+      <div id="metadata-crud" class="panel panel-default" style="margin-bottom: 20px;">
+        <div class="panel-heading">CRUDファイル</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>CRUD名</label>
+            <p><input type="text" name="crud_name" class="form-control" /></p>
+          </div>
+          <div>
+            <label>CRUD設定クラスファイル</label>
+            <p>(メタデータ作成ディレクトリ)/Crud/Config/CrudConfig<span id="metadata-crud-config-name"></span>.php</p>
+          </div>
+          <div>
+            <label>CRUDアクセスクラスファイル</label>
+            <p>(メタデータ作成ディレクトリ)/Crud/Access/CrudAccess<span id="metadata-crud-access-name"></span>.php</p>
+          </div>
+          <div class="alert alert-warning">
+            <span class="glyphicon glyphicon-warning-sign"></span> CRUDファイルは、既存ファイルが存在する場合はエラーとなります。
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="button" name="create" value="　作成実行　" class="btn btn-primary" />
+      </div>
+    </div>
+    </form>
+  </div>
+
+  <div id="page2" style="display:none;">
+    <div class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle"></span> DAOメタデータ生成が完了しました。詳細は下記を参照してください。
+    </div>
+
+    <div id="dao-result">
+      <h2><span class=" glyphicon glyphicon-tag"></span> DAOファイル生成結果</h2>
+      <pre></pre>
+    </div>
+
+    <div id="crud-result" style="display:none;">
+      <h2><span class=" glyphicon glyphicon-tag"></span> CRUDファイル生成結果</h2>
+      <pre></pre>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <form role="form">
+        <input type="button" class="btn btn-default" onclick="prevInput();" value="　戻る　" />
+      </form>
+    </div>
+  </div>
+
+<?php } else { ?>
+  <div class="alert alert-warning">
+    <span class="glyphicon glyphicon-warning-sign"></span> データベースにアクセス可能なテーブルが存在しませんでした。
+  </div>
+<?php } ?>
+

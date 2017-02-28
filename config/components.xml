@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  コンポーネント設定ファイル（components.xml）
+
+  フレームワーク初期化時にコンテナに登録するコンポーネントを設定する。
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/components.html
+-->
+<syl-components xmlns="http://syl.jp/schema"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="http://syl.jp/schema syl-components.xsd">
+
+  <component name="request"
+             class="SyL_RequestAbstract" 
+             file="Core/Request/SyL_RequestAbstract.php"
+             priority="2">
+    <constructor name="getInstance" static="true" />
+  </component>
+
+  <component name="response"
+             class="SyL_ResponseAbstract" 
+             file="Core/Response/SyL_ResponseAbstract.php"
+             priority="5">
+    <constructor name="getInstance" static="true" />
+    <method name="display" event="renderStream">
+      <arg type="component">view</arg>
+    </method>
+  </component>
+
+  <component name="data"
+             class="SyL_Data" 
+             file="Core/SyL_Data.php"
+             priority="5">
+    <constructor name="createInstance" static="true">
+      <arg type="component">request</arg>
+    </constructor>
+  </component>
+
+  <component name="context"
+             class="SyL_ContextAbstract"
+             file="Core/Context/SyL_ContextAbstract.php"
+             priority="6">
+    <constructor name="createInstance" static="true">
+      <arg type="component">data</arg>
+    </constructor>
+  </component>
+
+  <component name="view"
+             class="SyL_ViewAbstract" 
+             file="Core/View/SyL_ViewAbstract.php"
+             event="renderStream"
+             priority="1">
+    <constructor name="createInstance" static="true">
+      <arg type="component">context</arg>
+      <arg type="component">data</arg>
+    </constructor>
+    <method name="render" />
+  </component>
+
+</syl-components>

@@ -1,0 +1,109 @@
+<?php $form = $v->get('form'); ?>
+<script type="text/javascript" src="/content/js/webtoolkit.sha256.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var passwd = $('form input[name=passwd]').val();
+    var passwd_re = $('form input[name=passwd_re]').val();
+
+    if (passwd == '') {
+      showAlertMessage('パスワードが入力されていません');
+      return false;
+    }
+
+    if (passwd != passwd_re) {
+      showAlertMessage('パスワードとパスワード（再入力）が一致しません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "passwd": SHA256(passwd)
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　パスワード変更<br />
+  <small>BlueDriveにログインしているユーザーのパスワードを変更します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;"></div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <form method="post" role="form">
+<?php foreach ($form->getElementNames() as $name) { ?>
+    <div class="form-group">
+<?php
+  echo '<label>' . $form->getDisplayName($name);
+  if ($form->isRequire($name)) {
+      echo '&nbsp;<span class="label label-danger">必須</span>';
+  }
+  echo '</label><br />';
+  echo $form->getHtml($name);
+?>
+    </div>
+<?php } ?>
+    <button type="submit" class="btn btn-primary">パスワード変更</button>
+  </form>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> パスワードの変更が完了しました。
+  </div>
+</div>

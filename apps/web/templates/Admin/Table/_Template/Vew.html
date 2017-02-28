@@ -1,0 +1,217 @@
+<?php
+$id = $v->get('id');
+$form = $v->get('form');
+$elements = $v->get('elements');
+
+$url_lst = $v->get('url_lst');
+$url_edt = $v->get('url_edt');
+
+$enable_delete = $v->get('enable_delete');
+
+$relatedLinks = $v->get('relatedLinks');
+
+?>
+<?php if ($enable_delete) { ?>
+<script type="text/javascript">
+<!--
+function requestDelete(id)
+{
+  $.ajax({
+    url: "<?php echo $url_lst; ?>",
+    type: "POST",
+    dataType: "json",
+    cache: false,
+    data: {'__id': '<?php echo $id; ?>', '__type': 'delete'},
+    error: function (xmlHttp, textStatus, errorThrown) {
+      alert(textStatus);
+    },
+    success: function(result) {
+      if (!result.valid) {
+        alert("error");
+        return;
+      }
+
+      window.location.href = "<?php echo $url_lst; ?>";
+    }
+  });
+}
+//-->
+</script>
+<?php } ?>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　<?php $v->out('title'); ?></h1>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading clearfix">
+      <div class="pull-left" style="padding-left: 4px;"><strong>詳細</strong></div>
+      <div class="pull-right" style="padding-right: 4px; color: #CCCCCC;">
+      <a href="<?php echo $url_lst; ?>">一覧に戻る</a>&nbsp;|&nbsp;<a href="javascript:window.history.back();">直前に戻る</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <form role="form">
+        <table class="table bd-table-form">
+<?php
+    $cols_max = 2;
+    $cols_current = 0;
+    foreach ($form->getElementNames() as $name) {
+      $cols = $elements[$name]->getCols();
+      if ($cols_current + $cols > $cols_max) {
+        while ($cols_current < $cols_max) {
+          echo '<th>&nbsp;</th><td>&nbsp;</td>';
+          $cols_current++;
+        }
+        echo '</tr>';
+        $cols_current = 0;
+      }
+?>
+        <th><?php echo $form->getDisplayName($name); ?></th>
+        <td colspan="<?php echo ($cols * 2) - 1; ?>"><?php
+          echo $form->getHtml($name);
+          $v->echoIf(($elements[$name]->getNote() !== null), '<br /><span class="note">' . $elements[$name]->getNote() . '</span>');
+        ?></td>
+
+<?php
+      $cols_current += $cols;
+    }
+
+    if ($cols_current < $cols_max) {
+      while ($cols_current < $cols_max) {
+        echo '<th>&nbsp;</th><td>&nbsp;</td>';
+        $cols_current++;
+      }
+      echo '</tr>';
+    }
+?>
+          <tr>
+            <td colspan="4" class="text-right">&nbsp;
+<?php if ($url_edt) { ?>
+            <input type="button" value="編集する" class="btn btn-primary" onclick="window.location.href='<?php $v->out('url_edt'); ?>?__id=<?php echo $id; ?>';" />
+<?php } ?>
+<?php if ($enable_delete) { ?>
+            &nbsp;<input type="button" value="削除する" class="btn btn-primary" onclick="if (confirm('削除します。よろしいですか？')) {requestDelete();}" /></td>
+<?php } ?>
+          </tr>
+        </table>
+      </form>
+    </div>
+  </div>
+
+<?php if (count($relatedLinks) > 0) { ?>
+<script type="text/javascript" src="/content/js/jquery.BlueDriveTableList.js"></script>
+<script type="text/javascript">
+<!--
+$.fn.BlueDriveList.defaults = {
+  'url': window.location.href
+};
+//-->
+</script>
+
+  <div class="panel panel-default" style="margin-top:20px;">
+    <div class="panel-heading"><strong>関連リンク</strong></div>
+  </div>
+
+<?php foreach ($relatedLinks as $name => $title) { ?>
+  <div class="page-header page-header-h3">
+    <h3><span class="glyphicon glyphicon-book"></span>　<?php echo htmlspecialchars($title, ENT_COMPAT, 'UTF-8'); ?></h3>
+  </div>
+
+  <div id="content-error-message-<?php echo $name; ?>" class="alert alert-danger" style="display:none;">
+    <div style="margin-bottom: 4px;"><span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<strong>エラーが発生しました。下記のメッセージの内容を確認してください。</strong></div>
+    <div></div>
+  </div>
+
+  <div id="content-warn-message-<?php echo $name; ?>" class="alert alert-warning" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span>&nbsp;&nbsp;<span></span>
+  </div>
+
+  <div id="processing-<?php echo $name; ?>" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 検索しています...
+  </div>
+
+  <div style="padding-bottom: 10px;">
+    <div style="margin-bottom: 4px;">
+      <form role="form">
+      <div class="row page-counter-<?php echo $name; ?> form-inline" style="margin-bottom: 6px;">
+        <div class="col-xs-8" style="padding-top: 6px;"></div>
+        <div class="col-xs-4 text-right"></div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12 text-right page-navi-<?php echo $name; ?>"></div>
+      </div>
+      </form>
+    </div>
+    <div id="page-list-<?php echo $name; ?>"></div>
+  </div>
+
+<script type="text/javascript">
+<!--
+$(function() {
+  var currentSort = '';
+  var currentPage = '1';
+  var relatedName = "<?php echo $name; ?>";
+  var element = $("#page-list-" + relatedName);
+  var scrollTopSrc = 0;
+  var scrollTopDest = 0;
+
+  function replacePagingCallback(page)
+  {
+    currentPage = String(page);
+    replacePage();
+  }
+
+  function replaceSortingCallback(name, order) 
+  {
+    currentPage  = '1';
+    currentSort  = name;
+    currentSort += (order == '1') ? '.DESC' : '.ASC';
+    replacePage();
+  }
+
+  function completeCallback()
+  {
+    if ($(window).scrollTop() == scrollTopDest) {
+        $(window).scrollTop(scrollTopSrc); 
+    }
+  }
+
+  function replacePage()
+  {
+    var parameters = [];
+    parameters.push({'name': '__id', 'value': '<?php echo $id; ?>'});
+    parameters.push({'name': '__name', 'value': relatedName});
+    parameters.push({'name': '__page', 'value': currentPage});
+    parameters.push({'name': '__sort', 'value': encodeURIComponent(currentSort)});
+
+    scrollTopSrc = $(window).scrollTop();
+
+    element.BlueDriveTableList({
+      'parameters': parameters,
+      'loadingCss': '#processing-' + relatedName,
+      'counterCss': '.page-counter-' + relatedName,
+      'navigationCss': '.page-navi-' + relatedName,
+      'errorMessageCss': '#content-error-message-' + relatedName,
+      'warnMessageCss': '#content-warn-message-' + relatedName,
+      'pagingCallback': replacePagingCallback,
+      'rowChangingCallback': null,
+      'sortingCallback': replaceSortingCallback,
+      'completeCallback': completeCallback
+    });
+
+    scrollTopDest = $(window).scrollTop();
+  }
+
+  replacePage();
+});
+//-->
+</script>
+
+<?php
+    }
+}
+?>

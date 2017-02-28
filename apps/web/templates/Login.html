@@ -1,0 +1,136 @@
+<script type="text/javascript" src="/content/js/webtoolkit.sha256.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  var onetime = '';
+
+  function focusForm()
+  {
+    if ($('#form-login-id').val() == '') {
+      $('#form-login-id').focus();
+    } else {
+      $('#form-password').focus();
+    }
+  }
+
+  $('#page1 form').submit(function() {
+    var login_id = $('#form-login-id').val();
+    var password = $('#form-password').val();
+    if (login_id == '') {
+        showAlertMessage('ログインIDを入力してください');
+        focusForm();
+        return false;
+    }
+    if (password == '') {
+        showAlertMessage('パスワードを入力してください');
+        focusForm();
+        return false;
+    }
+
+    $('#alert-message-space').hide();
+    $('#page1').hide();
+    $('#processing span:eq(1)').text('認証しています...');
+    $('#processing').show();
+
+    password = SHA256(password);
+    password = SHA256(onetime + password);
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        'type': 'auth',
+        'login_id': login_id,
+        'passward': password
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (!result.valid) {
+          $('#form-password').val('');
+          $('#page1').show();
+          showAlertMessage('ログインIDまたはパスワードが正しくありません');
+          focusForm();
+          return;
+        }
+
+        window.location.href = result.url;
+      }
+    });
+
+    return false;
+  });
+
+  $.ajax({
+    type: "POST",
+    url: window.location.href,
+    data: {
+      'type': 'init'
+    },
+    dataType: "json",
+    complete: function() {
+      $('#processing').hide();
+    },
+    error: function(xmlHttp, status, error) {
+      showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+    },
+    success: function(result)
+    {
+      if (result['init']) {
+        window.location.href = 'initialize.html';
+        return;
+      }
+
+      onetime = result['onetime'];
+      if (!onetime) {
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+        return;
+      }
+
+      $('#page1').show();
+      focusForm();
+    }
+  });
+
+  function showAlertMessage(message)
+  {
+    $('#alert-message-space span:eq(1)').text(message);
+    $('#alert-message-space').show();
+  }
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　BlueDrive ログイン</h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;">
+  <span class="glyphicon glyphicon-warning-sign"></span> <span></span>
+</div>
+
+<div id="processing" class="well">
+  <span class="glyphicon glyphicon-time"></span> <span>初期化しています...<span>
+</div>
+
+<div id="page1" style="display:none;">
+  <form method="post" role="form">
+    <div class="form-group">
+      <label for="form-login-id" class="control-label">ログインID</label>
+      <input type="text" id="form-login-id" class="form-control" placeholder="ログインID" />
+    </div>
+    <div class="form-group">
+      <label for="form-password" class="control-label">パスワード</label>
+      <input type="password" id="form-password" class="form-control" placeholder="パスワード" />
+    </div>
+
+    <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-log-in"></span>　ログイン　</button>
+  </form>
+</div>

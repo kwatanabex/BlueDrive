@@ -1,0 +1,31 @@
+<?php
+$url_table_base = $v->get('App.Admin.url_table_base');
+$crud_description = $v->get('crud_description');
+?>
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　テーブル<br /><small>テーブル管理では、テーブル内のデータ管理機能を提供します。</small></h1>
+  </div>
+
+<?php if (count($crud_description) > 0) { ?>
+
+  <div>
+    <div class="well well-sm">
+      <h3><span class="glyphicon glyphicon-folder-open"></span>　テーブル一覧</h3>
+    </div>
+<?php foreach ($crud_description as $name => $description) { ?>
+    <div>
+      <blockquote>
+        <p><a href="<?php echo $url_table_base . $name; ?>/"><?php echo $description['name']; ?></a></p>
+        <?php if ($description['description']) { ?>
+        <small><?php echo $description['description']; ?></small>
+        <?php } ?>
+      </blockquote>
+    </div>
+<?php } ?>
+  </div>
+
+<?php } else { ?>
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> テーブルが登録されていません。
+  </div>
+<?php } ?>

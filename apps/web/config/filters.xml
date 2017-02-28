@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  フィルタ設定ファイル（filters.xml）
+
+  プロジェクト／アプリケーションで使用するフィルタを設定する。
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/filters.html
+-->
+<syl-filters xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-filters.xsd">
+
+<filter name="FilterAuthorization"
+        path="^/admin/(.+)\.php"
+        class="FilterAuthorization"
+        file="Filter/FilterAuthorization.php"
+        enable="true">
+  <preAction>
+    <arg type="component">context</arg>
+    <arg type="component">data</arg>
+  </preAction>
+</filter>
+
+</syl-filters>

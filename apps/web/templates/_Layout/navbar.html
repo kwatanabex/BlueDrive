@@ -1,0 +1,49 @@
+<?php
+$url_base = $v->get('App.url_base');
+$url_admin_base  = $v->get('App.url_admin_base');
+$url_file_base = $v->get('App.Admin.url_file_base');
+$url_table_base  = $v->get('App.Admin.url_table_base');
+$url_tablemeta_base  = $v->get('App.Admin.url_tablemeta_base');
+$url_system_base = $v->get('App.Admin.url_system_base');
+$url_user_base = $v->get('App.Admin.url_user_base');
+
+$main_menu_name = $v->get('App.Admin.main_menu_name');
+$login_user_name = $v->get('App.Admin.login_user_name');
+
+?>
+<header class="navbar navbar-inverse navbar-fixed-top bd-nav" role="navigation">
+  <div class="navbar-header">
+    <a class="navbar-brand" href="<?php echo $url_admin_base; ?>">BlueDrive</a>
+  </div>
+  <div class="navbar-collapse collapse">
+    <ul class="nav navbar-nav">
+      <li><a href="#">サイト</a></li>
+      <?php if ($url_file_base && AuthorizationHelper::enable('/admin/file/')) { ?>
+      <li class="<?php echo ($main_menu_name == 'file') ? 'active' : ''; ?>"><a href="<?php echo $url_file_base; ?>">ファイル</a></li>
+      <?php } ?>
+      <?php if ($url_table_base && AuthorizationHelper::enable('/admin/table/')) { ?>
+      <li class="<?php echo ($main_menu_name == 'table') ? 'active' : ''; ?>"><a href="<?php echo $url_table_base; ?>">テーブル</a></li>
+      <?php } ?>
+      <?php if ($url_tablemeta_base && AuthorizationHelper::enable('/admin/tablemeta/')) { ?>
+      <li class="<?php echo ($main_menu_name == 'tablemeta') ? 'active' : ''; ?>"><a href="<?php echo $url_tablemeta_base; ?>">テーブルメタ</a></li>
+      <?php } ?>
+      <?php if ($url_system_base && AuthorizationHelper::enable('/admin/system/')) { ?>
+      <li class="<?php echo ($main_menu_name == 'system') ? 'active' : ''; ?>"><a href="<?php echo $url_system_base; ?>">システム</a></li>
+      <?php } ?>
+      <li><a href="#">メール</a></li>
+    </ul>
+    <div style="margin-right: 15px;">
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span> <?php echo $login_user_name; ?>さん <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="<?php echo $url_user_base; ?>edit/">ユーザー情報変更</a></li>
+            <li><a href="<?php echo $url_user_base; ?>password/">パスワード変更</a></li>
+            <li class="divider"></li>
+            <li><a href="<?php echo $url_base; ?>logout.html"><span class="glyphicon glyphicon-log-out"></span> ログアウト</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>

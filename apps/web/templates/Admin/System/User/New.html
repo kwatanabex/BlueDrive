@@ -1,0 +1,198 @@
+<?php $form = $v->get('form'); ?>
+<script type="text/javascript" src="/content/js/webtoolkit.sha256.js"></script>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 form').submit(function(){
+    $("#alert-message-space").hide().empty();
+
+    var user_name = $('form input[name=user_name]').val();
+    var login_id = $('form input[name=login_id]').val();
+    var passwd = $('form input[name=passwd]').val();
+    var passwd_re = $('form input[name=passwd_re]').val();
+    var email = $('form input[name=email]').val();
+    var admin_flag = $('form input[name=admin_flag]:checked').val();
+    var group_id = $('form select[name=group_id] option:selected').val();
+    var valid_flag = $('form input[name=valid_flag]:checked').val();
+
+    if (user_name == '') {
+      showAlertMessage('ユーザー名が入力されていません');
+      return false;
+    }
+
+    if (login_id == '') {
+      showAlertMessage('ログインIDが入力されていません');
+      return false;
+    }
+
+    if (passwd == '') {
+      showAlertMessage('パスワードが入力されていません');
+      return false;
+    }
+
+    if (passwd != passwd_re) {
+      showAlertMessage('パスワードとパスワード（再入力）が一致しません');
+      return false;
+    }
+
+    if ((admin_flag != '0') && (admin_flag != '1')) {
+      showAlertMessage('ユーザーが選択されていません');
+      return false;
+    }
+
+    if (!group_id) {
+      showAlertMessage('グループが選択されていません');
+      return false;
+    }
+
+    if ((valid_flag != '0') && (valid_flag != '1')) {
+      showAlertMessage('状態が選択されていません');
+      return false;
+    }
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "user_name": user_name,
+        "login_id": login_id,
+        "passwd": SHA256(passwd),
+        "email": email,
+        "admin_flag" : admin_flag,
+        "group_id" : group_id,
+        "valid_flag" : valid_flag
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            showAlertMessage(response.message);
+            return;
+          }
+        }
+        showAlertMessage('システムエラーが発生しました。管理者にお問い合わせください。');
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          showAlertMessage(result['messages']);
+          $("#page1").show();
+       }
+      }
+    });
+
+    return false;
+  });
+
+  function showAlertMessage(messages)
+  {
+    if (!(messages instanceof Array)) {
+      messages = [messages];
+    }
+
+    for (var i in messages) {
+      $('#alert-message-space').append('<div><span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span></div>');
+      $('#alert-message-space div:last .alert-message').text(messages[i]);
+    }
+    $('#alert-message-space').show();
+  }
+
+  $(document).on('click', '#page1 form input[name="admin_flag"]', function() {
+    switch($(this).val()) {
+    case '1':
+      $('#page1 form select[name=group_id]').prop('disabled', true);
+      break;
+    default:
+      $('#page1 form select[name=group_id]').prop('disabled', false);
+      break;
+    }
+  });
+});
+
+//-->
+</script>
+
+<div class="page-header">
+  <h1><span class="glyphicon glyphicon-book"></span>　ユーザー管理 ／ 新規登録<br /><small>BlueDriveを利用するユーザーを登録します。</small></h1>
+</div>
+
+<div id="alert-message-space" class="alert alert-danger" style="display:none;">
+</div>
+
+<div id="processing" class="well" style="display:none;">
+  <span class="glyphicon glyphicon-time"></span> 処理しています…
+</div>
+
+<div id="page1">
+  <form method="post" role="form">
+    <div class="form-group">
+      <label for="form1_user_name"><?php echo $form->getDisplayName('user_name'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('user_name'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_login_id"><?php echo $form->getDisplayName('login_id'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('login_id'); ?>
+      <div class="text-warning" style="margin-top: 4px;">
+        <span class="glyphicon glyphicon-warning-sign"></span> ログインIDは、登録後変更できません
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_passwd"><?php echo $form->getDisplayName('passwd'); ?>&nbsp;<span class="label label-danger">必須</span></label><br />
+      <?php echo $form->getHtml('passwd'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_passwd_re"><?php echo $form->getDisplayName('passwd_re'); ?></label><br />
+      <?php echo $form->getHtml('passwd_re'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_email"><?php echo $form->getDisplayName('email'); ?></label><br />
+      <?php echo $form->getHtml('email'); ?>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_admin_flag"><?php echo $form->getDisplayName('admin_flag'); ?>&nbsp;<span class="label label-danger">必須</span></label>
+      <div class="radio" style="margin-top: 0;">
+        <label><input name="admin_flag" type="radio" id="form1_admin_flag_1" value="1" /> 管理者ユーザー</label>
+      </div>
+      <div class="radio">
+        <label><input name="admin_flag" type="radio" id="form1_admin_flag_0" value="0" checked="checked" /> 通常ユーザー</label>
+        <div><small>※ 通常ユーザーを選択した場合は、所属するグループも選択してください</small></div>
+        <div><?php echo $form->getHtml('group_id'); ?></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="form1_valid_flag"><?php echo $form->getDisplayName('valid_flag'); ?>&nbsp;<span class="label label-danger">必須</span></label>
+      <div class="radio" style="margin-top: 0;">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_1" value="1" checked="checked" /> 有効</label>
+      </div>
+      <div class="radio">
+        <label><input name="valid_flag" type="radio" id="form1_valid_flag_0" value="0" /> 無効</label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">　登録　</button>
+  </form>
+</div>
+
+<div id="page2" style="display:none;">
+  <div class="alert alert-success">
+    <span class="glyphicon glyphicon-ok-circle"></span> ユーザーの登録が完了しました。
+  </div>
+  <div style="margin-top: 20px;">
+    <a href="./"><strong>一覧画面へ</strong></a>
+  </div>
+</div>

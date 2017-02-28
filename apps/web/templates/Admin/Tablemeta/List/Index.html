@@ -1,0 +1,164 @@
+<?php
+$url_tablemeta_base = $v->get('App.Admin.url_tablemeta_base');
+
+$display_list = $v->get('display_list');
+$config_list  = $v->get('config_list');
+?>
+<script type="text/javascript">
+<!--
+$(function() {
+  $('#page1 input[name=add]').click(function(){
+    $('#page1 select[name=crud_metadata_list] option:selected').each(function(i) {
+      var name = $(this).val();
+      var match = false;
+      $('#page1 select[name=crud_table_list] option').each(function() {
+        if (name == $(this).val()) {
+           match = true;
+           return false;
+        }
+      });
+
+      if (!match) {
+        $('#page1 select[name=crud_table_list]').append('<option value="' + name + '">' + name + '</option>');
+      }
+
+      $(this).attr('selected', false);
+    });
+  });
+
+  $('#page1 input[name=remove]').click(function(){
+    $('#page1 select[name=crud_table_list] option:selected').remove();
+  });
+
+  $('#page1 input[name=up]').click(function(){
+    $('#page1 select[name=crud_table_list] option:selected').each(function(i) {
+      var prev = $(this).prev();
+      if ((this.index > 0) && (prev.filter('option:selected').length == 0)) {
+        $(this).insertBefore(prev);
+      }
+    });
+  });
+
+  $('#page1 input[name=down]').click(function(){
+    var len = $('#page1 select[name=crud_table_list] option').length;
+    $($('#page1 select[name=crud_table_list] option:selected').get().reverse()).each(function(i) {
+      var next = $(this).next();
+      if ((this.index < (len-1)) && (next.filter('option:selected').length == 0)) {
+        $(this).insertAfter(next);
+      }
+    });
+  });
+
+
+  $('#page1 input[name=next]').click(function(){
+
+    $("#page1").hide();
+    $("#processing").show();
+
+    var tables = [];
+    $('#page1 select[name=crud_table_list] option').each(function() {
+      tables.push($(this).val());
+    });
+
+    $.ajax({
+      type: "POST",
+      url: window.location.href,
+      data: {
+        "tables": tables.join("\t")
+      },
+      dataType: "json",
+      complete: function() {
+        $('#processing').hide();
+      },
+      error: function(xmlHttp, status, error) {
+        if (xmlHttp.responseText) {
+          var response = eval('(' + xmlHttp.responseText + ')');
+          if (response.message) {
+            $('#alert-message-space .alert-message').text(response.message);
+            $('#alert-message-space').show();
+            return;
+          }
+        }
+        $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+        $('#alert-message-space').show();
+      },
+      success: function(result)
+      {
+        if (result['valid']) {
+          $("#page2").show();
+        } else {
+          $('#alert-message-space .alert-message').text('システムエラーが発生しました。管理者にお問い合わせください。');
+          $('#alert-message-space').show();
+        }
+      }
+    });
+  });
+});
+
+//-->
+</script>
+
+  <div class="page-header">
+    <h1><span class="glyphicon glyphicon-book"></span>　テーブルリストの編集<br /><small>テーブルリストの編集では、テーブル管理に表示するメタデータのリストを編集します。</small></h1>
+  </div>
+
+  <div id="alert-message-space" class="alert alert-danger" style="display:none;">
+    <span class="glyphicon glyphicon-warning-sign"></span> <span class="alert-message"></span>
+  </div>
+
+  <div id="processing" class="well" style="display:none;">
+    <span class="glyphicon glyphicon-time"></span> 処理しています…
+  </div>
+
+<?php if ($v->get('exist')) { ?>
+  <div id="page1">
+    <form role="form">
+      <table>
+        <tr>
+          <td>
+<strong>CRUDメタデータ</strong>
+<select name="crud_metadata_list" size="12" class="form-control" multiple="multiple">
+<?php
+  foreach ($config_list as $name) {
+    $v->echoFormat('<option value="%s">%s</option>', array($name, $name));
+  }
+?>
+</select>
+          </td>
+          <td style="padding: 0 8px;">
+            <input type="button" name="add" class="btn btn-default" value=" → " style="margin-bottom: 10px;" /><br /><input type="button" class="btn btn-default" name="remove" value=" ← " />
+          </td>
+          <td style="padding-right: 8px;">
+<strong>テーブル管理リスト（<?php echo count($display_list); ?>件）</strong>
+<select name="crud_table_list" size="12" class="form-control" multiple="multiple">
+<?php
+  foreach ($display_list as $name) {
+    $v->echoFormat('<option value="%s">%s</option>', array($name, $name));
+  }
+?>
+</select>
+          </td>
+          <td><input type="button" name="up" class="btn btn-default" value=" ↑ " style="margin-bottom: 10px;" /><br /><input type="button"  class="btn btn-default" name="down" value=" ↓ " /></td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 10px;">
+        <p><input type="button"  class="btn btn-primary" name="next" value="　変更する　" /></p>
+      </div>
+    </form>
+  </div>
+
+<?php } else { ?>
+  <div class="alert alert-warning">
+    <span class="glyphicon glyphicon-warning-sign"></span> テーブルリストが作成されていません。まず [<a href="<?php echo $url_tablemeta_base; ?>create.html">メタデータ作成</a>] でメタデータを作成してください。
+  </div>
+<?php } ?>
+
+  <div id="page2" style="display:none;">
+    <div class="alert alert-success">
+      <span class="glyphicon glyphicon-ok-circle"></span> リストの更新が完了しました。
+    </div>
+  </div>
+
+
+

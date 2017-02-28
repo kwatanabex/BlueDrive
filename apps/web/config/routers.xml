@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ルーティング設定ファイル（routers.xml）
+
+  routers.xmlは、URLとアクション／テンプレートのマッピング情報やビューに関する設
+定を行う。
+  レイアウトを使用する場合は、適宜修正する必要がある。
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/routers.html
+-->
+<syl-routers xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-routers.xsd">
+
+<router path="^/admin/table/(\w+)\.php$" 
+        actionBaseClass="App.AdminTableAction"
+        layoutName="admin_table"
+        viewClass="View.LayoutDefault"
+        enable="true"
+        />
+
+<router path="^/admin/table/([^/]+)/atom/(\w+)\.php$" 
+        actionBaseClass="App.AdminTableAction"
+        forwardAction="/Admin/Table/AtomRouter.php"
+        enable="true"
+         />
+
+<router path="^/admin/table/([^/]+)/(\w+)\.php$" 
+        actionBaseClass="App.AdminTableAction"
+        forwardAction="/Admin/Table/Router.php"
+        layoutName="admin_table"
+        viewClass="View.LayoutDefault"
+        enable="true"
+         />
+
+<router path="^/admin/tablemeta/(\w+\/)?(\w+)\.php$" 
+        actionBaseClass="App.AdminTablemetaAction"
+        layoutName="admin_tablemeta"
+        viewClass="View.LayoutDefault"
+        enable="true"
+        />
+
+<router path="^/admin/system/(\w+\/)?(\w+)\.php$" 
+        actionBaseClass="App.AdminSystemAction"
+        layoutName="admin_system"
+        viewClass="View.LayoutDefault"
+        enable="true"
+        />
+
+<router path="^/admin/file/(\w+/)?(\w+)\.php$" 
+        actionBaseClass="App.AdminFileAction"
+        layoutName="admin_file"
+        viewClass="View.LayoutDefault"
+        enable="true"
+        />
+
+<router path="^/admin/user/(\w+\/)?(\w+)\.php$" 
+        actionBaseClass="App.AdminUserAction"
+        layoutName="admin_user"
+        viewClass="View.LayoutDefault"
+        enable="true"
+        />
+
+<router path="^/admin/(\w+)\.php" 
+        actionBaseClass="App.AdminAction"
+        layoutName="admin_top"
+        viewClass="View.LayoutDefault"
+        enable="true"
+         />
+
+<router path="(.+)" 
+        actionBaseClass="App.Action"
+        layoutName="public"
+        viewClass="View.LayoutDefault"
+        enable="true"
+         />
+
+</syl-routers>

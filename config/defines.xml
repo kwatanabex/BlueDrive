@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  プロジェクト定数設定ファイル（defines.xml）
+
+  defines.xml は、プロジェクト内で使用する定数を定義する。
+  設定ファイルの内容は、フレームワーク起動時に読み込まれ、SyL_Config クラスを使
+用して取得する。
+
+  例）
+  - defines.xml
+    <define name="EXAMPLE">test</define>
+  - プログラム側
+    echo SyL_Config::get('EXAMPLE'); // test
+
+  設定名として、「SYL_」から始まる名称は、フレームワーク上で予約されているので使
+用不可。（その他使用可能文字は、半角英数と「_」）
+
+  ※ 設定値などは下記URLを参照
+  http://syl.jp/document/configuration/defines.html
+-->
+<syl-defines xmlns="http://syl.jp/schema"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://syl.jp/schema syl-defines.xsd">
+  <framework>
+    <!--
+      BlueDrive 接続データベース
+        シングルユーザーモードのときは、使用されない
+    -->
+    <define name="SYL_DB_CONNECTION_STRING">pgsql://xxxxx:xxxxx@localhost:5432/bluedrive</define>
+    <define name="SYL_SENDMAIL_CONNECTION_STRING">smtp://xxxxx:xxxxx@example.com:25</define>
+  </framework>
+  
+  <application>
+    <!--
+      PHP CLIのパス
+    -->
+    <define name="PHP_BIN">/usr/local/php/5.3.21/bin/php</define>
+    <define name="PHP_DAO_CREATE_BIN">{$PHP_BIN} {$SYL_DIR}/bin/dao.php -d "%s" -t "%s" -n "%s"</define>
+    <define name="PHP_CRUD_CREATE_BIN">{$PHP_BIN} {$SYL_DIR}/bin/crud.php -d "%s" -t "%s" -a "%s" -n "%s"</define>
+
+    <!--
+      ライブラリが生成されるルートディレクトリ
+    -->
+    <define name="GENERATE_LIB_DIR">{$SYL_PROJECT_DIR}/var/lib</define>
+
+    <!--
+      生成されるCRUDリストファイルのパス
+      このリストのテーブルが、テーブル管理に表示される
+      CRUD生成ディレクトリ以下に作成される
+    -->
+    <define name="CRUD_DISPLAY_LIST_FILE">/Crud/CrudDisplayList.php</define>
+
+    <!--
+      エラー発生時にメールを送信するアドレス
+      未設定の場合は、送信しない
+    -->
+    <define name="ERROR_MAIL_ADDRESS"></define>
+
+    <!--
+      SyLプロジェクトから取得するログレベル
+    -->
+    <define name="MANAGE_PROJECT_GET_LOG_LEVEL">notice</define>
+    <!--
+      ログファイルを保存する期間（日数）
+    -->
+    <define name="MANAGE_PROJECT_KEEP_LOG_DATE">180</define>
+
+    <!--
+      管理対象のSyLプロジェクト
+    -->
+    <define name="MANAGE_PROJECT_DIR1">/home/webuser/projects/stock</define>
+    <define name="MANAGE_PROJECT_DIR2">/home/webuser/projects/sylsite</define>
+
+
+  </application>
+</syl-defines>
